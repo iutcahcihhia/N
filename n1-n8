@@ -1,0 +1,415 @@
+#include <iostream> //для просмотра результата действий функций по одной раскоментарьте их вызовы в main
+#include <conio.h>
+
+using namespace std;
+
+char* otlad = new char[1000]; // массив отладки
+int* number1;
+int x; // макс число знаков в введённых числах
+int _enter = 13;
+int _backspace = 8;
+
+
+enum keys
+{
+	key0 = 48, key1, key2, key3, key4, key5, key6, key7, key8, key9
+};
+
+int len_search(int* number) // поиск длины числа
+{
+	int len = 0;
+	while (number[len] >= 0 && number[len] <= 9) len++;
+	if (number[0] == 0) len = 1;
+	return len;
+}
+
+void otl(int* number) // заполнение отладочного массива
+{
+	int len = len_search(number);
+	for (int i = 0; i < len; i++)
+	{
+		otlad[i] = number[i] + 48;
+	}
+	otlad[len] = '\0';
+}
+
+void num_output(int* number) //вывод числа на экран
+{
+	int len = len_search(number);
+	for (int i = 0; i < len; i++) cout << number[i];
+	cout << endl;
+}
+
+int COM_NN_D(int* number1, int* number2) // сравнение чисел
+{
+	int len1 = len_search(number1);
+	int len2 = len_search(number2);
+	if (len1 > len2) return 2; //если длина числа больше то оно больше
+	if (len1 < len2) return 1;
+	if (len1 == len2)
+	{
+		for (int i = 0; i < len1; i++)
+		{
+			if (number1[i] > number2[i]) return 2; //при равной длине проверяем до первых отличающихся цифр
+			if (number1[i] < number2[i]) return 1;
+		}
+		return 0;
+	}
+}
+
+int NZER_N_B(int* number)
+{
+	if (number[0] != 0) return 1;
+	else return 0;  //если число начинается с 0 то это 0
+}
+
+int* ADD_1N_N(int* number)
+{
+	int len = len_search(number);
+	int stack = 1;
+	int* result = NULL;
+	int* p = NULL;
+	int i = len - 1;
+
+	result = new int[len + 1];
+
+	result[0] = -1;
+
+	while (true) //сложение в столбик
+	{
+		result[i + 1] = (number[i] + stack) % 10;
+		stack = (number[i] + stack) / 10; //часть которая переходит в следующий разряд
+		i--;
+		if (i == -1) //дойдя до конца числа надо дописать stack в первый разряд если он не 0
+		{
+			if (stack != 0) 
+			{
+				len++;
+				result[0] = stack;
+			}
+			break;
+		}
+	}
+
+	if (result[0] < 0 || result[0] > 9) //если число не полное(первый разряд пуст) надо перезаписать его в новый массив, начиная с 0, а старый удалить
+	{
+		int* p = new int[len + 1];
+		for (int i = 0; i < len; i++) p[i] = result[i + 1];
+		delete[] result;
+		result = NULL;
+		return p; // возвращаем указатель на результат
+	}
+	return result; //возвращаем указатель на результат
+}
+
+int* ADD_NN_N(int* operand1, int* operand2)
+{
+	int res_len; //длина большего числа
+	int pos1, pos2, pos(-1); //индексы последних цифр в числах и позиция с которой число меньшей длины заканчивается
+	int stack = 0;
+	int len1 = len_search(operand1);
+	int len2 = len_search(operand2);
+	int* result = NULL;
+
+	if (COM_NN_D(operand1, operand2) == 2 || COM_NN_D(operand1, operand2) == 0)
+	{
+		pos1 = len1 - 1;
+		pos2 = len2 - 1;
+		res_len = len1; 
+	}
+	else
+	{
+		pos1 = len2 - 1;
+		pos2 = len1 - 1;
+		res_len = len2;
+	}
+
+	result = new int[res_len + 1];
+
+	if (operand1[0] != 0 || operand2[0] != 0) //сложение в столбик, ПОЛУЧЕННЫЕ ЦИФРЫ ВСЕГДА ПИШУТСЯ В КОНЕЦ МАССИВА
+	{
+		for (int i = pos1, j = pos2; j >= 0; i--, j--)
+		{
+			if (len1 >= len2)
+			{
+				result[i + 1] = (stack + operand1[i] + operand2[j]) % 10;
+				stack = (operand1[i] + operand2[j] + stack) / 10;
+			}
+			else
+			{
+				result[i + 1] = (stack + operand1[j] + operand2[i]) % 10;
+				stack = (operand1[j] + operand2[i] + stack) / 10;
+			}
+			if (j == 0) pos = i; //кончается короткое число дальше к цифрам длинного числа прибавляем stack
+		}
+
+		for (int i = pos; i > 0; i--)
+		{
+			if (len1 >= len2)
+			{
+				result[i] = (operand1[i - 1] + stack) % 10;
+				stack = (operand1[i - 1] + stack) / 10;
+			}
+			else
+			{
+				result[i] = (operand2[i - 1] + stack) % 10;
+				stack = (operand2[i - 1] + stack) / 10;
+			}
+		}
+		if (stack != 0) //дописываем stack если нужно
+		{
+			result[0] = stack;
+			if (len1 >= len2) res_len = len1 + 1;
+			else res_len = len2 + 1;
+		}
+
+		if (result[0] < 0 || result[0] > 9) // аналогично ADD_1N_N
+		{
+			int* p = new int[res_len + 1];
+			for (int i = 0; i < res_len; i++) p[i] = result[i + 1];
+			delete[] result;
+			result = NULL;
+			return p;
+		}
+	}
+	else result[0] = 0;
+	return result;
+}
+
+int* SUB_NN_N(int* operand1, int* operand2)
+{
+	int pos = -1;
+	int* result = NULL;
+	int* p = NULL;
+	int stack = 0;
+	int len1 = len_search(operand1);
+	int len2 = len_search(operand2);
+
+	int position = len1;
+
+	if (COM_NN_D(operand1, operand2) == 2 || COM_NN_D(operand1, operand2) == 0)	result = new int[len1];
+	else
+	{
+		cout << "Negative result!"; //если второе число больше выводим на экран
+		result = new int[2];
+		result[0] = 0;
+		return result;
+	}
+
+	for (int i = len1 - 1, j = len2 - 1; j >= 0; i--, j--) //вычитание в столбик
+	{
+		result[i] = (10 + operand1[i] - operand2[j] + stack) % 10;
+		if (operand1[i] + stack < operand2[j]) stack = -1;
+		else stack = 0;
+		if (j == 0) pos = i - 1; //кончилось второе число
+	}
+
+	for (int i = pos; i >= 0; i--) //довычитаем stack
+	{
+		result[i] = (10 + operand1[i] + stack) % 10;
+		if (operand1[i] + stack == -1) stack = -1;
+		else stack = 0;
+	}
+
+	for (int i = 0; i < len1; i++) // поиск позиции в массиве result с которой начинается число
+	{
+		if (result[i] >= 1 && result[i] <= 9)
+		{
+			position = i;
+			break;
+		}
+	}
+
+	int res_len = len1 - position; // длина результата
+
+	if ((result[0] <= 0 && res_len > 1) || result[0] > 9) // аналогично ADD_1N_N но только с учётом позиции
+	{
+		p = new int[len1];
+		for (int i = 0; i < len1; i++) p[i] = result[position + i];
+		delete[] result;
+		result = NULL;
+		return p;
+	}
+
+	return result;
+}
+
+int* MUL_ND_N(int* operand, int n) // на вход число и цифра(множитель)
+{
+	int stack = 0;
+	int len = len_search(operand);
+	int res_len = len + 1;
+	int* p = NULL;
+	int* result = NULL;
+	int position = res_len;
+
+	result = new int[res_len];
+
+	if (operand[0] != 0) //если не 0 выполняем
+	{
+		for (int i = len - 1; i >= 0; i--) //умножение в столбик
+		{
+			result[i + 1] = (operand[i] * n + stack) % 10;
+			stack = (operand[i] * n + stack) / 10;
+		}
+		if (stack != 0) result[0] = stack; //дописываем stack если нужно
+
+
+		for (int i = 0; i < res_len; i++) //поиск позиции //не нужен потом уберу
+		{
+			if (result[i] >= 1 && result[i] <= 9)
+			{
+				position = i;
+				break;
+			}
+		}
+
+		if ((result[0] < 0 || result[0] > 9) && position != res_len) //аналогично в конце функций выше
+		{
+			p = new int[res_len];
+			for (int i = 0; i < res_len - position; i++) p[i] = result[position + i];
+			delete[] result;
+			result = NULL;
+			return p;
+		}
+		if (position == res_len) result[0] = 0;
+	}
+	else result[0] = operand[0]; //если 0 пишем 0 в result
+	return result;
+}
+
+int* MUL_Nk_N(int* operand, int n, int k) // на вход число, цифра и степень 10
+{
+	int len = len_search(operand) + k;
+	int* result = NULL;
+	int* result_k = NULL;
+	int* p = NULL;
+
+	result = MUL_ND_N(operand, n); // умножаем число на цифру
+	int res_len = len_search(result);
+
+	if (result[0] != 0) //если получили не 0 то выполняем
+	{
+		result_k = new int[res_len + k]; //массив равный длине результата
+		for (int i = 0; i < res_len; i++) result_k[i] = result[i]; //переносим в массив число полученное ранее
+		delete[] result; //освобождаем память
+		result = NULL;
+		for (int i = 0; i < k; i++) result_k[res_len + i] = 0; //дописываем k нулей в конец
+		return result_k;
+	}
+	else result[0] = operand[0];
+	return result;
+}
+
+int* MUL_NN_N(int* operand1, int* operand2)
+{
+	int res_len;
+	int len1 = len_search(operand1);
+	int len2 = len_search(operand2);
+	int* result = new int[2];
+	int* stack = NULL;
+	int* p = NULL;
+
+	result[0] = 0;
+	if (len1 >= len2) res_len = len1;
+	else res_len = len2;
+
+	int position = res_len * res_len + 1; 
+
+	for (int i = res_len - 1; i >= 0; i--)
+	{
+		if (len1 >= len2) stack = MUL_Nk_N(operand2, operand1[i], res_len - i - 1); //умножаем число на соответствующую цифру большего и на нужную степень 10
+		else stack = MUL_Nk_N(operand1, operand2[i], res_len - i - 1);
+		p = ADD_NN_N(result, stack); //складываем ранее полученный результат co ыефсл
+		otl(stack);
+		delete[] stack;
+		otl(p);
+		stack = NULL;
+		delete[] result;
+		result = NULL;
+		result = p;
+	}
+
+	for (int i = 0; i < res_len * res_len + 1; i++) // аналогично SUB
+	{
+		if (result[i] >= 1 && result[i] <= 9)
+		{
+			position = i;
+			break;
+		}
+	}
+
+	if ((result[0] < 0 || result[0] > 9) && position != res_len * res_len + 1) // аналогично SUB
+	{
+		p = new int[res_len * res_len + 1];
+		for (int i = 0; i < res_len * res_len + 1 - position; i++) p[i] = result[position + i];
+		delete[] result;
+		result = NULL;
+		return p;
+	}
+	if (position == res_len * res_len + 1) result[0] = 0;
+	return result;
+}
+
+void input(int* number, int n) //ввод
+{
+	char num;
+	bool first_flag = false;
+	bool null_flag = false;
+	int len = 0;
+	while (true)
+	{
+		system("cls");
+		cout << "Input number " << n << ": ";
+		num_output(number);
+		num = _getch();
+		if (num >= key0 && num <= key9 && len < x && null_flag == false)
+		{
+			first_flag = true;
+			number[len] = num - '0';
+			if (num == key0 && len == 0) null_flag = true;
+			len++;
+			number[len] = -1;
+		}
+		if (num == _backspace && first_flag == true)
+		{
+			len--;
+			number[len] = -1;
+			if (len == 0)
+			{
+				first_flag = false;
+				null_flag = false;
+			}
+		}
+		if (num == _enter && first_flag == true)
+		{
+			system("cls");
+			break;
+		}
+	}
+}
+
+int main()
+{
+	cout << "Input x (0 < number < 10^(x + 1)): ";
+	cin >> x;
+	int* number1 = new int[x];
+	input(number1, 1);
+	int* number2 = new int[x];
+	input(number2, 2);
+	cout << "Number 1: ";
+	num_output(number1);
+	cout << "Number 2: ";
+	num_output(number2);
+	int* p = NULL;
+	//p = ADD_1N_N(number1); //+1
+	//p = ADD_NN_N(number1, number2); //n+m
+	//p = SUB_NN_N(number1, number2); //n-m
+	//p = MUL_ND_N(number1, 0); //n*c
+	//p = MUL_Nk_N(number1, 7, 3); //n*c*10^k
+	//p = MUL_NN_N(number1, number2); //n*m
+	otl(p);
+	num_output(p);
+	delete[] p;
+	p = NULL;
+}
