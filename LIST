@@ -1,0 +1,621 @@
+#include <conio.h>
+#include <iostream>
+#include <windows.h>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+const int _up = 72;
+const int _down = 80;
+const int _enter = 13;
+const int _esc = 27;
+
+const int l = 50;
+
+const int menuwide = 40;
+
+int menusize;
+int action = 1;
+int element_count = 0;
+int element_pos = 1;
+bool chain = false;
+
+char file_name[l];
+
+string action_menu[] =
+{
+"Add element(left)",
+"Add element(right)",
+"Delete element",
+"Add n elements",
+"Delete elements from m to n",
+"Make chain",
+"Broke chain",
+"Write to file",
+"Read from file",
+"Exit"
+};
+
+enum keys
+{
+    key1 = 49, key2, key3, key4, key5, key6, key7, key8, key9
+};
+
+struct List
+{
+    int value;
+    List* next;
+    List* prev;
+} *element, *head, *tail, *stack;
+
+void _cursor(int i, int j)
+{
+    HANDLE consoleOutput;
+    COORD cursorPos;
+
+    consoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    cursorPos.X = i;
+    cursorPos.Y = j;
+    SetConsoleCursorPosition(consoleOutput, cursorPos);
+}
+
+void read_from_file()
+{
+    cin.ignore(cin.rdbuf()->in_avail());
+    _cursor(menuwide + 1, 0);
+    cout << "FILE NAME: ";
+    cin.getline(file_name, l);
+    strcat_s(file_name, ".txt");
+    ifstream in;
+    in.open(file_name);
+    string line;
+    _cursor(0, menusize + element_count + 7);
+    if (in.is_open()) while (getline(in, line)) cout << line << endl;
+    in.close();
+}
+
+void  write_to_file()
+{
+    if (element_count > 0)
+    {
+        cin.ignore(cin.rdbuf()->in_avail());
+        _cursor(menuwide + 1, 0);
+        cout << "FILE NAME: ";
+        cin.getline(file_name, l);
+        strcat_s(file_name, ".txt");
+        stack = element;
+        element = head;
+        char c = '-';
+        _cursor(menuwide + 1, 1);
+        ofstream out;
+        out.open(file_name);
+        if (out.is_open())
+        {
+            while (element != tail)
+            {
+                out << element->value << "-";
+                element = element->next;
+            }
+            out << element->value;
+            out.close();
+        }
+        else cout << "FILE DOESN'T EXIST!";  
+        element = stack;
+    } 
+}
+
+void fl()
+{
+    _cursor(menuwide + 1, 0);
+    cout << string(30, ' ');
+    if (action == 8) write_to_file();
+    if (action == 9) read_from_file();
+    _cursor(menuwide + 1, 1);
+    cout << "PRESS ESC TO EXIT TO MAIN MENU";
+    int choice;
+    while (true)
+    {
+        choice = _getch();
+        if (choice == _esc) return;
+    }
+    
+}
+
+void delete_element(bool mode)
+{
+    if (element_count == 1)
+    {
+        _cursor(menuwide + 1, 1);
+        cout << string(30, ' ');
+        delete(element);
+        element_count--;
+        chain = false;
+    }
+    if (element_count > 1)
+    {
+        _cursor(menuwide + 1, 1);
+        cout << string(20, ' ');
+        element_count--;
+        if (chain == false)
+        {
+            if (element == head)
+            {
+                head = element->next;
+                element = element->next;
+                delete(element->prev);
+                return;
+            }
+            if (element == tail)
+            {
+                if (mode != 1) element_pos--;
+                tail = element->prev;
+                element = element->prev;
+                delete(element->next);
+                return;
+            }
+        }
+        if ((element != head && element != tail) || chain == true)
+        {
+            if (element == head) head = element->next;
+            if (element == tail)
+            {
+                tail = element->prev;
+                if (mode != 1) element_pos--;
+            }
+            stack = element->next;
+            element = element->prev;
+            element->next = stack;
+            stack = element;
+            element = element->next;
+            delete(element->prev);
+            element->prev = stack;
+            if (element->prev == tail && chain == true) element_pos = 1;
+            if (element->next == head && chain == true) element_pos = element_count;
+            return;
+        }
+    }
+}
+
+void delete_m_n()
+{
+    if (element_count == 0) return;
+    else
+    {
+        _cursor(menuwide + 1, 1);
+        cout << string(30, ' ');
+        int m, n;
+        bool flag = false;
+        do
+        {
+            _cursor(menuwide + 1, 1);
+            cout << "INPUT M: "; cin >> m;
+        } while (m < 1 || m > element_count);
+        do
+        {
+            _cursor(menuwide + 1, 2);
+            cout << "INPUT N: "; cin >> n;
+        } while (n < 1 || n > element_count || n < m);
+        List* st = element;
+        int old_count = element_count;
+        element = head;
+        for (int i = 1; i < m; i++) element = element->next;
+        for (int i = 0; i < n - m + 1; i++)
+        {
+            if (element == st) flag = true;
+            delete_element(1);
+        }
+        if (element_count > 0)
+        {
+            if (flag == true)
+            {
+                element = head;
+                if (m > 1)
+                {
+                    element_pos = m - 1;
+                    for (int i = 1; i < m - 1; i++) element = element->next;
+                }
+                if (m == 1 && n <= old_count) element_pos = 1;
+            }
+            else
+            {
+                element = st;
+                if (element_pos > n) element_pos = element_pos - (n - m + 1);
+            }
+        }
+        else
+        {
+            element_pos = 1;
+            head = tail = element;
+            return;
+        }
+    }
+}
+
+void add_element(bool destination, bool mode)
+{
+    if (mode != 1)
+    {
+        _cursor(menuwide + 1, 1);
+        cout << string(30, ' ');
+    }
+    if (element_count == 0)
+    {
+        if (mode == 0)
+        {
+            _cursor(menuwide + 1, 0);
+            cout << string(30, ' ');
+            _cursor(menuwide + 1, 0);
+            cout << "INPUT VALUE: ";
+        }
+        element = new(List);
+        cin >> element->value;
+        head = tail = element;
+        element_count++;
+        return;
+    }
+    else
+    {
+        if (destination == 0)
+        {
+            if (element == head && chain == false)
+            {
+                element->prev = new List;
+                head = element->prev;
+                stack = element;
+                element = element->prev;
+                element->next = stack;
+                if (mode == 0)
+                {
+                    _cursor(menuwide + 1, 0);
+                    cout << string(30, ' ');
+                    _cursor(menuwide + 1, 0);
+                    cout << "INPUT VALUE: ";
+                }
+                cin >> element->value;
+                element_count++;
+                return;
+            }
+            if (element != head || chain == true)
+            {
+                List* res;
+                res = element->prev;
+                element->prev = new List;
+                if (element == head) head = element->prev;
+                stack = element;
+                element = element->prev;
+                element->next = stack;
+                element->prev = res;
+                stack = element;
+                element = element->prev;
+                element->next = stack;
+                element = element->next;
+                if (mode == 0)
+                {
+                    _cursor(menuwide + 1, 0);
+                    cout << string(30, ' ');
+                    _cursor(menuwide + 1, 0);
+                    cout << "INPUT VALUE: ";
+                }
+                cin >> element->value;
+                element_count++;
+                return;
+            }
+        }
+        else
+        {
+            if (element == tail && chain == false)
+            {
+                element->next = new List;
+                tail = element->next;
+                stack = element;
+                element = element->next;
+                element->prev = stack;
+                if (mode == 0)
+                {
+                    _cursor(menuwide + 1, 0);
+                    cout << string(30, ' ');
+                    _cursor(menuwide + 1, 0);
+                    cout << "INPUT VALUE: ";
+                }
+                cin >> element->value;
+                element = element->prev;
+                element_count++;
+                return;
+            }
+            if (element != tail || chain == true)
+            {
+                List* res;
+                res = element->next;
+                element->next = new List;
+                if (element == tail) tail = element->next;
+                stack = element;
+                element = element->next;
+                element->prev = stack;
+                element->next = res;
+                stack = element;
+                element = element->next;
+                element->prev = stack;
+                element = element->prev;
+                if (mode == 0)
+                {
+                    _cursor(menuwide + 1, 0);
+                    cout << string(30, ' ');
+                    _cursor(menuwide + 1, 0);
+                    cout << "INPUT VALUE: ";
+                }
+                cin >> element->value;
+                element = element->prev;
+                element_count++;
+                return;
+            }   
+        }
+    }
+}
+
+void add_n_elements()
+{
+    int n;
+    _cursor(menuwide + 1, 1);
+    cout << string(30, ' ');
+    _cursor(menuwide + 44, 0);
+    cout << ": ";
+    cin >> n;
+    List* st = element;
+    for (int i = 1; i <= n; i++)
+    {
+        _cursor(menuwide + 1, i);
+        cout << "INPUT VALUE " << i << ": ";
+        add_element(1, 1);
+        if (element_count == 1) st = element;
+        if (element != tail) element = element->next;
+    }
+    element = st;
+}
+
+void make_chain()
+{
+    if (chain == false && element_count > 0)
+    {
+        stack = element;
+        element = head;
+        element->prev = tail;
+        element = element->prev;
+        element->next = head;
+        element = stack;
+        chain = true;
+    }
+}
+
+void broke_chain()
+{
+    _cursor(menuwide + 1, 1);
+    cout << string(20, ' ');
+    if (chain == true && element_count > 0)
+    {
+        head = element;
+        tail = element->prev;
+        element = element->prev;
+        element->next = NULL;
+        element = head;
+        element->prev = NULL;
+        chain = false;
+        element_pos = 1;
+    }
+}
+
+void write_list()
+{
+    if (element_count == 0) cout << "NO ELEMENTS IN LIST!" << endl;
+    else
+    {
+        stack = element;
+        element = head;
+        cout << "LIST:" << endl;
+        cout << char(201) << string(3, 205) << char(203) << string(5, 205) << char(187) << endl;
+        cout << char(186) << "POS" << char(186) << "VALUE" << char(186) << " CHAIN: ";
+        if (chain == true) cout << "TRUE"; else cout << "FALSE"; cout << endl;
+        cout << char(204) << string(3, 205) << char(206) << string(5, 205) << char(185) << endl;
+        for (int i = 1; i <= element_count; i++)
+        {
+            cout << char(186); printf("%3d", i); cout << char(186); printf("%4d", element->value);
+            if (i == element_pos) cout << "<"; else cout << " "; cout << char(186) << endl;
+            if (element != tail) element = element->next;
+        }
+        cout << char(200) << string(3, 205) << char(202) << string(5, 205) << char(188) << endl;
+        element = stack;
+    }
+}
+
+void menu(int choice)
+{
+    system("cls");
+    cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
+    int i = 1;
+    for (string menutxt : action_menu)
+    {
+        string marker;
+        if (choice == i) marker = " >"; else marker = "  ";
+        char num = i + '0';
+        string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+        if (i == 10) menuline = (char)186 + marker + "10. " + menutxt;
+        menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
+        cout << menuline << endl;
+        i++;
+    }
+    cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+    write_list();
+    if (action == 1 || action == 2)
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO INPUT VALUE";
+    }
+    switch (action)
+    {
+    case 3:
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO DELETE ELEMENT";
+        break;
+    }
+    case 4:
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO INPUT AMOUNT OF NEW ELEMENTS";
+        break;
+    }
+    case 5:
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO INPUT POSITIONS [M,N] TO BE DELETED (M <= N)";
+        break;
+    }
+    case 6:
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO MAKE CHAIN";
+        break;
+    }
+    case 7:
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO BROKE CHAIN";
+        break;
+    }
+    case 8:
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO INPUT FILE NAME";
+        break;
+    }
+    case 9:
+    {
+        _cursor(menuwide + 1, 0);
+        cout << "PRESS ENTER TO INPUT FILE NAME";
+        break;
+    }
+    }
+}
+
+void choose_element()
+{
+    int arrow;
+    while (true)
+    {
+        system("cls");
+        menu(action);
+        _cursor(menuwide + 1, 1);
+        cout << "PRESS ESC TO EXIT TO MAIN MENU";
+        if ((action == 1 || action == 2) && element_count == 0)
+        {
+            add_element(0, 0);
+            system("cls");
+            menu(action);
+            _cursor(menuwide + 1, 1);
+            cout << "PRESS ESC TO EXIT TO MAIN MENU";
+        }  
+        cin.ignore(cin.rdbuf()->in_avail());
+        arrow = _getch();    
+        if (arrow == 224) arrow = _getch();
+        switch (arrow)
+        {
+        case _up:
+        {
+            if (element == head)
+                if (chain == true)
+                {
+                    element = element->prev;
+                    element_pos = element_count;
+                }
+                else continue;
+            else
+            {
+                if (element_count != 0)
+                {
+                    element = element->prev;
+                    element_pos--;
+                }
+            }
+            break;
+        }
+        case _down:
+        {
+            if (element == tail)
+                if (chain == true)
+                {
+                    element = element->next;
+                    element_pos = 1;
+                }
+                else continue;
+            else
+            {
+                if (element_count != 0)
+                {
+                    element = element->next;
+                    element_pos++;
+                }
+            }
+            break;
+        }
+        case _enter:
+        {
+            switch (action)
+            {
+            case 1: {add_element(0, 0); break;}
+            case 2: {add_element(1, 0); break;}
+            case 3: {delete_element(0); break;}
+            case 4: {add_n_elements(); break;}
+            case 5: {delete_m_n(); break;}
+            case 7: {broke_chain(); break;}
+            }
+            break;
+        }
+        case _esc:
+        {
+            return;
+        }
+        }
+    }
+}
+
+void arrow_position()
+{
+    int arrow;
+    system("cls");
+    while (true)
+    {
+        menu(action);
+        arrow = _getch();
+        if (arrow == 224) arrow = _getch();
+        switch (arrow)
+        {
+        case _up:
+        {
+            action--;
+            if (action == 0) action = menusize;
+            break;
+        }
+        case _down:
+        {
+            action++;
+            if (action == menusize + 1) action = 1;
+            break;
+        }
+        case _enter:
+        {
+            if (action < 6 || action == 7) choose_element();
+            if (action == 8 || action == 9) fl();
+            if (action == 6) make_chain();
+            if (action == 10) return;
+            break;
+        }
+        }
+    }
+}
+
+int main()
+{
+    menusize = sizeof(action_menu) / sizeof(action_menu[0]);
+    arrow_position();
+    _cursor(0, menusize + element_count + 10);
+}
