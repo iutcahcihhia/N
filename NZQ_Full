@@ -1247,15 +1247,18 @@ FR* DIV_QQ_Q(FR* operand1, FR* operand2)
 	delete[] stack->numerator;
 	delete stack;
 
-	if (POZ_Z_D(result->denominator) == 1 && POZ_Z_D(result->numerator) == 1)
+	if (POZ_Z_D(result->denominator) == 1)
 	{
-		result->numerator[0] = 0;
-		result->denominator[0] = 0;
-	}
-	if (POZ_Z_D(result->denominator) == 2 && POZ_Z_D(result->numerator) == 1)
-	{
-		result->numerator[0] = 1;
-		result->denominator[0] = 0;
+		if (POZ_Z_D(result->numerator) == 1)
+		{
+			result->numerator[0] = 0;
+			result->denominator[0] = 0;
+		}
+		if (POZ_Z_D(result->numerator) == 2)
+		{
+			result->numerator[0] = 1;
+			result->denominator[0] = 0;
+		}
 	}
 
 	return result;
