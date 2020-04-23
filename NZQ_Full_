@@ -1810,7 +1810,7 @@ void menu_Q(int choice, bool action_flag)
 		case 5:
 		{
 			result = DIV_QQ_Q(fraction1, fraction2);
-			trans_result = TRANS_Q_Z(result);
+			if (result != NULL) trans_result = TRANS_Q_Z(result);
 			if (result == NULL && trans_result == NULL)
 			{
 				cout << "Error! Division by zero.";
