@@ -1,0 +1,2976 @@
+#include <iostream>
+#include <conio.h>
+
+using namespace std;
+
+const int _up = 72;
+const int _down = 80;
+const int _esc = 27;
+const int _enter = 13;
+int _backspace = 8;
+
+int* number1 = NULL;
+int* number2 = NULL;
+int* stack = NULL;
+
+struct FR
+{
+	int* degree;
+	int* numerator;
+	int* denominator;
+	FR* next;
+};
+
+FR* fraction1 = NULL;
+FR* fraction2 = NULL;
+
+FR* polynom1 = NULL;
+FR* polynom2 = NULL;
+
+int menuwide = 30;
+
+string menu_module[] =
+{
+	"N module",
+	"Z module",
+	"Q module",
+	"P module",
+	"Exit"
+};
+
+string N_menu[] = 
+{
+	"Input numbers",
+	"Addition",
+	"Subtraction",
+	"Multiplication",
+	"Division",
+	"MOD Division",
+	"GCD",
+	"LCM",
+	"Exit"
+};
+
+string Z_menu[] =
+{
+	"Input numbers",
+	"Addition",
+	"Subtraction",
+	"Multiplication",
+	"Division",
+	"MOD Division",
+	"Exit"
+};
+
+string Q_menu[] =
+{
+	"Input fractions",
+	"Addition",
+	"Subtraction",
+	"Multiplication",
+	"Division",
+	"Exit"
+};
+
+string P_menu[] =
+{
+	"Input polynoms",
+	"Addition",
+	"Subtraction",
+	"Multiplication",
+	"Division",
+	"MOD division",
+	"GCD",
+	"Derivative",
+	"NMR",
+	"Exit"
+};
+
+int module_menusize = sizeof(menu_module) / sizeof(menu_module[0]);
+int menusize_N = sizeof(N_menu) / sizeof(N_menu[0]);
+int menusize_Z = sizeof(Z_menu) / sizeof(Z_menu[0]);
+int menusize_Q = sizeof(Q_menu) / sizeof(Q_menu[0]);
+int menusize_P = sizeof(P_menu) / sizeof(P_menu[0]);
+
+enum keys
+{
+	key0 = 48, key1, key2, key3, key4, key5, key6, key7, key8, key9
+};
+
+int COM_NN_D(int* number1, int* number2);
+FR* ADD_QQ_Q(FR* fraction1, FR* fraction2);
+FR* RED_Q_Q(FR* fraction);
+
+//определение длины числа
+int len_search(int* number, bool Z_flag)
+{
+	int len = 0;
+	while (number[len] >= 0 && number[len] <= 9) len++;
+	if (number[0] == 0 && Z_flag == false) len = 1;
+	if (Z_flag == true) len--;
+	return len;
+}
+
+//вывод целого или натурального числа на экран
+void num_output(int* number, bool Z_flag, bool q, bool endl_flag)
+{
+	int len = len_search(number, Z_flag);
+	if (Z_flag == true && number[0] == 1) cout << '-';
+	for (int i = 0; i < len; i++) cout << number[Z_flag + i];
+	if (endl_flag == true) cout << endl;
+	if (q == true) cout << " / ";
+}
+
+//вывод дроби на экран
+void num_output_Q(FR* fraction, bool endl_flag)
+{
+	num_output(fraction->numerator, 1, 1, 0);
+	num_output(fraction->denominator, 1, 0, endl_flag);
+}
+
+//вывод многочлена на экран
+void num_output_P(FR* polynom, bool endl_flag)
+{
+	bool first_flag = false;
+	int den_len;
+	int num_len;
+	int* st1 = new int[2];
+	st1[0] = 1;
+	if (polynom != NULL)
+	{
+		while (true)
+		{
+			den_len = len_search(polynom->denominator, 1);
+			num_len = len_search(polynom->numerator, 1);
+			if (!(den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1))
+			{
+				if (first_flag == false)
+				{
+					if (polynom->numerator[0] == 0)
+					{
+						if (den_len == 1 && polynom->denominator[1] == 1) num_output(polynom->numerator, 1, 0, 0);
+						else
+						{
+							cout << "(";
+							num_output_Q(polynom, 0);
+							cout << ")";
+						}
+					}
+					else
+					{
+						if (den_len == 1 && polynom->denominator[1] == 1) num_output(polynom->numerator, 1, 0, 0);
+						else
+						{
+							cout << "-(";
+							polynom->numerator[0] = 0;
+							num_output_Q(polynom, 0);
+							cout << ")";
+							polynom->numerator[0] = 1;
+						}
+					}
+					first_flag = true;
+				}
+				else
+				{
+					if (polynom->numerator[0] == 0)
+					{
+						if (den_len == 1 && polynom->denominator[1] == 1)
+						{
+							cout << "+";
+							num_output(polynom->numerator, 1, 0, 0);
+						}
+						else
+						{
+							cout << "+(";
+							num_output_Q(polynom, 0);
+							cout << ")";
+						}
+					}
+					else
+					{
+						if (den_len == 1 && polynom->denominator[1] == 1) num_output(polynom->numerator, 1, 0, 0);
+						else
+						{
+							cout << "-(";
+							polynom->numerator[0] = 0;
+							num_output_Q(polynom, 0);
+							cout << ")";
+							polynom->numerator[0] = 1;
+						}
+					}
+				}
+			}
+			if (COM_NN_D(polynom->degree, st1) == 2)
+			{
+				if (den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1)
+				{
+					if (polynom->numerator[0] == 0)
+					{
+						if (first_flag == false) cout << "x^";
+						else cout << "+x^";
+					}
+					else cout << "-x^";
+				}
+				else cout << "*x^";
+				num_output(polynom->degree, 0, 0, 0);
+				if (first_flag == false) first_flag = true;
+			}
+			if (COM_NN_D(polynom->degree, st1) == 0)
+			{
+				if (den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1)
+				{
+					if (polynom->numerator[0] == 0)
+					{
+						if (first_flag == false) cout << "x";
+						else cout << "+x";
+					}
+					else cout << "-x";
+				}
+				else cout << "*x";
+				if (first_flag == false) first_flag = true;
+			}
+			if (den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1 && COM_NN_D(polynom->degree, st1) == 1)
+			{
+				if (polynom->numerator[0] == 0)
+				{
+					if (first_flag == false) cout << "1";
+					else cout << "+1";
+				}
+				else cout << "-1";
+				first_flag = true;
+			}
+			if (polynom->next != NULL) polynom = polynom->next;
+			else break;
+		}
+	}
+	else cout << "0";
+	if (endl_flag == true) cout << endl;
+	delete[] st1;
+	st1 = NULL;
+}
+
+//перевёрнутая дробь
+FR* inverted_Q(FR* fraction)
+{
+	FR* result = new FR;
+	int len;
+
+	len = len_search(fraction->numerator, 1);
+	result->denominator = new int[len + 1];
+	for (int i = 0; i < len + 1; i++) result->denominator[i] = fraction->numerator[i];
+
+	len = len_search(fraction->denominator, 1);
+	result->numerator = new int[len + 1];
+	for (int i = 0; i < len + 1; i++) result->numerator[i] = fraction->denominator[i];
+
+	if (fraction->numerator[0] == 1)
+	{
+		result->numerator[0] = 1;
+		result->denominator[0] = 0;
+	}
+	return result;
+}
+
+//удаление многочлена из памяти
+void delete_P(FR* polynom)
+{
+	FR* stack = polynom;
+	FR* prev = NULL;
+	while (stack != NULL)
+	{
+		prev = stack;
+		stack = stack->next;
+		delete[] prev->degree;
+		delete[] prev->numerator;
+		delete[] prev->denominator;
+		delete prev;
+	}
+}
+
+//копирование многочлена
+FR* copy_P(FR* polynom)
+{
+	FR* stack = polynom;
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	int len;
+	while (stack != NULL)
+	{
+		if (pol_head == NULL)
+		{
+			new_polynom = new FR;
+			new_polynom->next = NULL;
+			pol_head = new_polynom;
+		}
+		else
+		{
+			new_polynom->next = new FR;
+			new_polynom = new_polynom->next;
+			new_polynom->next = NULL;
+		}
+		len = len_search(stack->degree, 0);
+		new_polynom->degree = new int[len];
+		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
+		len = len_search(stack->numerator, 1);
+		new_polynom->numerator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
+		len = len_search(stack->denominator, 1);
+		new_polynom->denominator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
+		stack = stack->next;
+	}
+	return pol_head;
+}
+
+//сортировка многочлена от старшей степени к младшей и его упрощение 
+FR* sort_P(FR* polynom)
+{
+	FR* pol_head = polynom;
+	FR* stack = pol_head;
+	int len;
+	bool end_flag = false;
+	while (end_flag == false)
+	{
+		end_flag = true;
+		FR* prev = NULL;
+		stack = pol_head;
+		while (stack != NULL)
+		{
+			if (stack->next != NULL)
+			{
+				if (COM_NN_D(stack->degree, stack->next->degree) == 1)
+				{
+					FR* stack_n = stack->next;
+					stack->next = stack->next->next;
+					stack_n->next = stack;
+					stack = stack_n;
+
+					if (prev == NULL) pol_head = stack;
+					else prev->next = stack;
+					
+					end_flag = false;
+				}
+			}
+			prev = stack;
+			stack = stack->next;
+		}
+	}
+
+	FR* prev = NULL;
+	stack = pol_head;
+	if (stack != NULL)
+	while (stack->next != NULL)
+	{
+		if (COM_NN_D(stack->degree, stack->next->degree) == 0)
+		{
+			FR* stack_cur = stack;
+			stack = ADD_QQ_Q(stack_cur, stack_cur->next);
+			len = len_search(stack_cur->degree, 0);
+			stack->degree = new int[len];
+			for (int i = 0; i < len; i++) stack->degree[i] = stack_cur->degree[i];
+			stack->next = stack_cur->next->next;
+			delete[] stack_cur->next->degree;
+			delete[] stack_cur->next->numerator;
+			delete[] stack_cur->next->denominator;
+			delete stack_cur->next;
+			delete[] stack_cur->degree;
+			delete[] stack_cur->numerator;
+			delete[] stack_cur->denominator;
+			delete stack_cur;
+
+			if (prev == NULL) pol_head = stack;
+			else prev->next = stack;
+		}
+		else
+		{
+			prev = stack;
+			stack = stack->next;
+		}
+	}
+
+	prev = NULL;
+	stack = pol_head;
+	while (stack != NULL)
+	{
+		bool flag = false;
+		if (stack->numerator[1] == 0)
+		{
+			FR* stack_cur = stack;
+			stack = stack->next;
+			delete[] stack_cur->degree;
+			delete[] stack_cur->numerator;
+			delete[] stack_cur->denominator;
+			delete stack_cur;
+			if (prev == NULL) pol_head = stack;
+			else prev->next = stack;
+			flag = true;
+		}	
+		if (stack != NULL && flag != true)
+		{
+			prev = stack;
+			stack = stack->next;
+		}
+	}
+
+	prev = NULL;
+	stack = pol_head;
+	while (stack != NULL)
+	{
+		FR* stack_cur = RED_Q_Q(stack);
+		len = len_search(stack->degree, 0);
+		stack_cur->degree = new int[len];
+		for (int i = 0; i < len; i++) stack_cur->degree[i] = stack->degree[i];
+		stack_cur->next = stack->next;
+		delete[] stack->degree;
+		delete[] stack->numerator;
+		delete[] stack->denominator;
+		delete stack;
+		stack = NULL;
+		stack = stack_cur;
+		if (prev == NULL) pol_head = stack;
+		else prev->next = stack;
+		prev = stack;
+		if (stack != NULL) stack = stack->next;
+	}
+	return pol_head;
+}
+
+
+//модуль N
+
+
+//сравнение чисел
+int COM_NN_D(int* number1, int* number2)
+{
+	int len1 = len_search(number1, 0);
+	int len2 = len_search(number2, 0);
+	if (len1 > len2) return 2; //если число длиннее, то оно больше
+	if (len1 < len2) return 1;
+	if (len1 == len2)
+	{
+		for (int i = 0; i < len1; i++) //если числа равной длины, сравниваем их цифры
+		{
+			if (number1[i] > number2[i]) return 2;
+			if (number1[i] < number2[i]) return 1;
+		}
+		return 0;
+	}
+}
+
+//проверка на 0
+int NZER_N_B(int* number)
+{
+	if (number[0] != 0) return 1; //если первая цифра натурального числа не 0, то оно не 0
+	else return 0;
+}
+
+//прибавление к числу 1
+int* ADD_1N_N(int* number)
+{
+	int len = len_search(number, 0); //длина входного числа
+	int stack = 1;
+	int* result = NULL;
+	int* p = NULL;
+	int i = len - 1;
+
+	result = new int[len + 1]; //число может стать длиннее на 1 в ходе операции
+
+	result[0] = 0;
+
+	while (true)
+	{
+		result[i + 1] = (number[i] + stack) % 10; //сложение в столбик
+		stack = (number[i] + stack) / 10;
+		i--;
+		if (i == -1)
+		{
+			if (stack != 0) //число стало длиннее на 1
+			{
+				len++;
+				result[0] = stack; 
+			}
+			break;
+		}
+	}
+
+	if (result[0] == 0) //если число не изменило своей длины, в первом разряде 0
+	{
+		int* p = new int[len + 1];
+		for (int i = 0; i < len; i++) p[i] = result[i + 1]; 
+		delete[] result;
+		result = NULL;
+		return p; //возвращаем полученный массив
+	}
+	return result; 
+}
+
+//сложение натуральных чисел
+int* ADD_NN_N(int* operand1, int* operand2)
+{
+	int len; //длина большего числа
+	int pos1, pos2, pos(-1); //позиции последних разрядов большего(pos1) и меньшего(pos2) чисел, разность длин чисел
+	int stack = 0;
+	int len1 = len_search(operand1, 0);
+	int len2 = len_search(operand2, 0);
+	int* result = NULL;
+
+	if (COM_NN_D(operand1, operand2) == 2 || COM_NN_D(operand1, operand2) == 0)
+	{
+		pos1 = len1 - 1;
+		pos2 = len2 - 1;
+		len = len1;
+	}
+	else
+	{
+		pos1 = len2 - 1;
+		pos2 = len1 - 1;
+		len = len2;
+	}
+
+	result = new int[len + 1]; //число может стать длиннее на 1 в ходе операции
+
+	if (operand1[0] != 0 || operand2[0] != 0)
+	{ 
+		result[0] = 0;
+		for (int i = pos1, j = pos2; j >= 0; i--, j--) //сложение в столбик
+		{
+			if (len1 >= len2) //есть 2 варианта развития событий
+			{
+				result[i + 1] = (stack + operand1[i] + operand2[j]) % 10; //сложение цифр
+				stack = (operand1[i] + operand2[j] + stack) / 10; //перенос в следующий разряд
+			}
+			else
+			{
+				result[i + 1] = (stack + operand1[j] + operand2[i]) % 10; //аналогично
+				stack = (operand1[j] + operand2[i] + stack) / 10;
+			}
+			if (j == 0) pos = i;
+		}
+
+		for (int i = pos; i > 0; i--) //досложение цифр большего числа с переносом в следующий разряд
+		{
+			if (len1 >= len2)
+			{
+				result[i] = (operand1[i - 1] + stack) % 10;
+				stack = (operand1[i - 1] + stack) / 10;
+			}
+			else
+			{
+				result[i] = (operand2[i - 1] + stack) % 10;
+				stack = (operand2[i - 1] + stack) / 10;
+			}
+		}
+		if (stack != 0) //число стало длиннее на 1
+		{
+			result[0] = stack;
+			if (len1 >= len2) len = len1 + 1;
+			else len = len2 + 1;
+		}
+
+		if (result[0] == 0) //если число не изменило своей длины, в первом разряде 0
+		{
+			int* p = new int[len];
+			for (int i = 0; i < len; i++) p[i] = result[i + 1];
+			delete[] result;
+			result = NULL;
+			return p;
+		}
+	}
+	else result[0] = 0;
+	return result;
+}
+
+//вычитание натуральных чисел
+int* SUB_NN_N(int* operand1, int* operand2)
+{
+	int pos = -1;
+	int* result = NULL;
+	int* p = NULL;
+	int stack = 0;
+	int len1 = len_search(operand1, 0);
+	int len2 = len_search(operand2, 0);
+
+	int position = len1;
+
+	if (COM_NN_D(operand1, operand2) != 1) result = new int[len1]; //максимальная длина результата - длина большего числа
+	else return NULL; //проверка на отрицательность результата
+	
+	
+	for (int i = len1 - 1, j = len2 - 1; j >= 0; i--, j--) //вычитание в столбик
+	{
+		result[i] = (10 + operand1[i] - operand2[j] + stack) % 10;
+		if (operand1[i] + stack < operand2[j]) stack = -1;
+		else stack = 0;
+		if (j == 0) pos = i - 1;
+	}
+
+	for (int i = pos; i >= 0; i--) //довычитание переноса в следующий разряд
+	{
+		result[i] = (10 + operand1[i] + stack) % 10;
+		if (operand1[i] + stack == -1) stack = -1;
+		else stack = 0;
+	}
+
+	for (int i = 0; i < len1; i++) //поиск позиции первой цифры числа в массиве
+	{
+		if (result[i] != 0)
+		{
+			position = i;
+			break;
+		}
+	}
+
+	int res_len = len1 - position;
+	if (res_len == 0) result[0] = 0; //если разность длины массива и позиции первой цифры равна 0 то результат 0
+
+	if (res_len > 0) //иначе создаём новый массив со сдвигом на position и возвращаем его
+	{
+		p = new int[len1];
+		for (int i = 0; i < len1; i++) p[i] = result[position + i];
+		delete[] result;
+		result = NULL;
+		return p;
+	}
+	return result;
+}
+
+//умножение числа на цифру
+int* MUL_ND_N(int* operand, int n)
+{
+	int stack = 0;
+	int len = len_search(operand, 0);
+	int max_len = len + 1; //максимальная длина результата
+	int* p = NULL;
+	int* result = NULL;
+	int position = max_len;
+
+	result = new int[max_len];
+	result[0] = 0;
+
+	if (operand[0] != 0 || n == 0) //отсечение вариантов в которых результат 0
+	{
+		for (int i = len - 1; i >= 0; i--) //умножение в столбик
+		{
+			result[i + 1] = (operand[i] * n + stack) % 10; //сложение цифр
+			stack = (operand[i] * n + stack) / 10; //перенос в следующий разряд
+		}
+		if (stack != 0) result[0] = stack; //число стало длиннее на 1
+
+		for (int i = 0; i < max_len; i++) //поиск позиции первой цифры числа в массиве
+		{
+			if (result[i] != 0)
+			{
+				position = i;
+				break;
+			}
+		}
+
+		if (position != max_len) //создаём новый массив со сдвигом на position и возвращаем его
+		{
+			p = new int[max_len];
+			for (int i = 0; i < max_len - position; i++) p[i] = result[position + i];
+			delete[] result;
+			result = NULL;
+			return p;
+		}
+	}
+	return result;
+}
+
+//умножение числа на 10^k
+int* MUL_Nk_N(int* operand, int k)
+{
+	int len = len_search(operand, 0) + k; //длина результата
+	int* result = new int[1];
+	int* p = NULL;
+
+	if (operand[0] != 0) //создаём новый массив и дописываем k нулей в конец
+	{
+		result = new int[len];
+		for (int i = 0; i < len - k; i++) result[i] = operand[i];
+		for (int i = 0; i < k; i++) result[len - k + i] = 0;
+		return result;
+	}
+	else result[0] = 0; //если входное число 0 то результат 0
+	return result;
+}
+
+//умножение натуральных чисел
+int* MUL_NN_N(int* operand1, int* operand2)
+{
+	int max_len, len; //длина большего входного числа, длина текущего числа
+	int len1 = len_search(operand1, 0);
+	int len2 = len_search(operand2, 0);
+	int* result = new int[1];
+	int* pre_stack = NULL;
+	int* stack = NULL;
+	int* p = NULL;
+
+	result[0] = 0;
+	if (len1 >= len2) max_len = len1;
+	else max_len = len2;
+
+	int position = max_len * max_len + 1;
+
+	for (int i = max_len - 1; i >= 0; i--) //умножение в столбик
+	{
+		if (len1 >= len2) //есть 2 варианта развития событий
+		{
+			pre_stack = MUL_ND_N(operand2, operand1[i]); //сначала умножаем число на цифру
+			stack = MUL_Nk_N(pre_stack, max_len - i - 1); //потом это на 10 в степени позиции этой цифры с конца числа
+			delete[] pre_stack;
+			pre_stack = NULL;
+		}
+		else
+		{
+			pre_stack = MUL_ND_N(operand1, operand2[i]); //аналогично
+			stack = MUL_Nk_N(pre_stack, max_len - i - 1);
+			delete[] pre_stack;
+			pre_stack = NULL;
+		}
+		p = ADD_NN_N(result, stack); //новое слагаемое прибавляется к старому результату
+		delete[] stack;
+		delete[] result;
+		stack = NULL;
+		result = NULL;
+		len = len_search(p, 0);
+		result = new int[len];
+		for (int j = 0; j < len; j++) result[j] = p[j];
+		delete[] p;
+		p = NULL;
+	}
+
+
+	for (int i = 0; i < max_len * max_len + 1; i++) //поиск позиции первой цифры числа в массиве
+	{
+		if (result[i] >= 1 && result[i] <= 9)
+		{
+			position = i;
+			break;
+		}
+	}
+
+	if ((result[0] < 0 || result[0] > 9) && position != max_len * max_len + 1) //создаём новый массив со сдвигом на position и возвращаем его
+	{
+		p = new int[max_len * max_len + 1];
+		for (int i = 0; i < max_len * max_len + 1 - position; i++) p[i] = result[position + i];
+		delete[] result;
+		result = NULL;
+		return p;
+	}
+	if (position == max_len * max_len + 1) result[0] = 0; //если position равна максимальной длине результата то результат 0 
+	return result;
+}
+
+//вычитание из числа другого, умноженного на n
+int* SUB_NDN_N(int* operand1, int* operand2, int n)
+{
+	int* true_operand2 = NULL;
+	int* result = NULL;
+
+	true_operand2 = MUL_ND_N(operand2, n); //умножение второго числа на n
+	result = SUB_NN_N(operand1, true_operand2); //вычитание из первого числа второго, умноженного на n
+
+	delete[] true_operand2;
+	true_operand2 = NULL;
+	return result;
+}
+
+//первая цифра результата деления числа на другое, умноженное на 10^k
+int DIV_NN_Dk(int* operand1, int* operand2, int k)
+{
+	int* p = NULL;
+	int* true_operand2 = NULL;
+	int result = 1;
+
+	true_operand2 = MUL_Nk_N(operand2, k); //умножение второго числа на 10^k
+	int len = len_search(true_operand2, 0);
+	p = new int[len + 1];
+	for (int i = 0; i < len; i++) p[i] = true_operand2[i];
+
+	while (COM_NN_D(operand1, p) != 1) //если второе число меньше, продолжаем
+	{
+		result++;
+		delete[] p;
+		p = NULL;	
+		p = MUL_ND_N(true_operand2, result); //умножение второго числа на вновь полученный result
+	}
+	delete[] p;
+	delete[] true_operand2;
+	p = NULL;
+	true_operand2 = NULL;
+	result--; //как только p становится больше чем operand1, выходим из цикла и уменьшаем result на 1
+	return result;
+}
+
+//деление натуральных чисел
+int* DIV_NN_N(int* operand1, int* operand2)
+{
+	int len1 = len_search(operand1, 0);
+	int len2 = len_search(operand2, 0);
+	int* result = NULL;
+	int* stack = NULL;
+	int* true_operand2 = NULL;
+	int* p = NULL;
+	int num; //полученная цифра
+	bool flag = false;
+	int len;
+
+	if (COM_NN_D(operand1, operand2) != 1 && operand2[0] != 0) //второе число должно быть меньше и не равно 0
+	{
+		stack = new int[len1];
+		for (int i = 0; i < len1; i++) stack[i] = operand1[i];
+
+		result = new int[len1 - len2 + 1]; //максимальная длина результата
+
+		for (int i = len1 - len2; i >= 0; i--) //деление в столбик
+		{
+			num = DIV_NN_Dk(stack, operand2, i); //получение цифры результата, начиная с первой
+			if (i == len1 - len2 && num == 0) //если первая цифра 0, то переход в следующую итерацию
+			{
+				flag = true;
+				continue;
+			}
+			if (flag == false) result[len1 - len2 - i] = num; //заполнение result в зависимости от первой цифры 
+			else result[len1 - len2 - i - 1] = num;
+			true_operand2 = MUL_Nk_N(operand2, i); 
+			p = SUB_NDN_N(stack, true_operand2, num); //вычитание из первого числа второго, умноженного на соответствующее число
+			delete[] true_operand2;
+			delete[] stack;
+			true_operand2 = NULL;
+			stack = NULL;
+			len = len_search(p, 0);
+			stack = new int[len];
+			for (int j = 0; j < len; j++) stack[j] = p[j];
+			delete[] p;
+			p = NULL;
+		}
+		return result;
+	}
+	else return NULL;
+}
+
+//остаток от деления натуральных чисел
+int* MOD_NN_N(int* operand1, int* operand2)
+{
+	int* pre_result = NULL;
+	int* result = NULL;
+	int* stack = NULL;
+
+	if (COM_NN_D(operand1, operand2) != 1 && operand2[0] != 0)
+	{
+		pre_result = DIV_NN_N(operand1, operand2); //деление чисел нацело
+		stack = MUL_NN_N(operand2, pre_result); //умножение второго числа на результат деления
+		result = SUB_NDN_N(operand1, stack, 1); //вычитание полученных чисел
+
+		delete[] stack;
+		delete[] pre_result;
+		stack = NULL;
+		pre_result = NULL;
+
+		return result;
+	}
+	else return NULL;
+}
+
+//НОД натуральных чисел
+int* GCF_NN_N(int* operand1, int* operand2)
+{
+	int* stack1 = NULL;
+	int* stack2 = NULL;
+	int* p = NULL;
+	int len1 = len_search(operand1, 0);
+	int len2 = len_search(operand2, 0);
+	int len;
+
+	stack1 = new int[len1];
+	stack2 = new int[len2];
+
+	for (int i = 0; i < len1; i++) stack1[i] = operand1[i];
+	for (int i = 0; i < len2; i++) stack2[i] = operand2[i];
+
+	if (stack1[0] != 0 || stack2[0] != 0) //алгоритм Евклида
+	{
+		while (true)
+		{
+			if (NZER_N_B(stack1) == 0) //если одно из чисел 0, то другое - НОД
+			{
+				delete[] stack1;
+				stack1 = NULL;
+				return stack2;
+			}
+			if (NZER_N_B(stack2) == 0)
+			{
+				delete[] stack2;
+				stack2 = NULL;
+				return stack1;
+			}
+
+			if (COM_NN_D(stack1, stack2) != 1) //большее число меняем на остаток от деления большего на меньшее
+			{
+				p = MOD_NN_N(stack1, stack2);
+				len = len_search(p, 0);
+				delete[] stack1;
+				stack1 = NULL;
+				stack1 = new int[len];
+				for (int i = 0; i < len; i++) stack1[i] = p[i];
+				delete[] p;
+				p = NULL;
+			}
+			else
+			{
+				p = MOD_NN_N(stack2, stack1);
+				len = len_search(p, 0);
+				delete[] stack2;
+				stack2 = NULL;
+				stack2 = new int[len];
+				for (int i = 0; i < len; i++) stack2[i] = p[i];
+				delete[] p;
+				p = NULL;
+			}
+		}
+	}
+	else return NULL; // если оба числа 0 то НОД - любое число (неопределённость)
+}
+
+//НОК натуральных чисел
+int* LCM_NN_N(int* operand1, int* operand2)
+{
+	int* stack1 = NULL;
+	int* stack2 = NULL;
+	int* result = NULL;
+
+	stack1 = MUL_NN_N(operand1, operand2); // LCM(a,b) = (a*b)/GCD(a,b)
+	stack2 = GCF_NN_N(operand1, operand2);
+	result = DIV_NN_N(stack1, stack2);
+
+	delete[] stack1;
+	delete[] stack2;
+	stack1 = NULL;
+	stack2 = NULL;
+
+	return result;
+}
+
+
+//модуль Z
+
+
+//абсолютная величина числа
+int* ABS_Z_N(int* number)
+{
+	int* p;
+	int len = len_search(number, 1);
+	p = new int[len];
+	for (int i = 0; i < len; i++) p[i] = number[i + 1]; //модуль целого числа начинается со второго элемента массива
+	return p;	
+}
+
+//определение положительности числа
+int POZ_Z_D(int* number)
+{
+	if (number[1] == 0) return 0; //если в старшем разряде числа 0 то оно равно 0
+	if (number[0] == 0) return 2; //в зависимости от первого элемента-знака возвращается соответствующее значение
+	if (number[0] == 1) return 1;
+}
+
+//умножение числа на -1
+int* MUL_ZM_Z(int* number)
+{
+	int* p = NULL;
+	int len = len_search(number, 1);
+	p = new int[len + 1];
+	if (POZ_Z_D(number) != 0)
+	{
+		if (number[0] == 0) p[0] = 1; //инвертируем первый элемент-знак
+		if (number[0] == 1) p[0] = 0;
+		for (int i = 0; i < len; i++) p[i + 1] = number[i + 1]; //дописываем оставшиеся элементы
+		return p;
+	}
+	for (int i = 0; i < len + 1; i++) p[i] = number[i];
+	return p;
+}
+
+//преобразование натурального числа в целое
+int* TRANS_N_Z(int* number)
+{
+	int* p = NULL;
+	int len = len_search(number, 0);
+	p = new int[len + 1];
+	p[0] = 0; //так как натуральные числа положительны на первое место ставим 0
+	for (int i = 0; i < len; i++) p[i + 1] = number[i]; //дописываем оставшиеся элементы
+	return p;
+}
+
+//преобразование неотрицательного целого числа в натуральное
+int* TRANS_Z_N(int* number)
+{
+	if (POZ_Z_D(number) != 1)
+	{
+		int* p = NULL;
+		int len = len_search(number, 1);
+		p = new int[len];
+		for (int i = 0; i < len; i++) p[i] = number[i + 1]; //пишем в массив элементы начиная со второй позиции
+		return p;
+	}
+	else return NULL;
+}
+
+//сложение целых чисел
+int* ADD_ZZ_Z(int* operand1, int* operand2)
+{
+	int* p1 = NULL;
+	int* p2 = NULL;
+	int* pre_result = NULL;
+	int* result = NULL;
+	int len;
+
+	p1 = ABS_Z_N(operand1);
+	p2 = ABS_Z_N(operand2);
+
+	if (p1[0] == 0)
+	{
+		pre_result = TRANS_N_Z(p2);
+		if (POZ_Z_D(operand2) == 1) result = MUL_ZM_Z(pre_result);
+		else
+		{
+			delete[] p1;
+			delete[] p2;
+			p1 = NULL;
+			p2 = NULL;
+			return pre_result;
+		}
+		delete[] p1;
+		delete[] p2;
+		delete[] pre_result;
+		p1 = NULL;
+		p2 = NULL;
+		pre_result = NULL;
+		return result;
+	}
+
+	if (POZ_Z_D(operand1) == POZ_Z_D(operand2)) //если числа одного знака то модуль результата будет суммой модулей чисел
+	{
+		pre_result = ADD_NN_N(p1, p2);
+		delete[] p1;
+		p1 = NULL;
+		p1 = TRANS_N_Z(pre_result);
+		if (POZ_Z_D(operand1) == 1) result = MUL_ZM_Z(p1);
+		else
+		{
+			len = len_search(p1, 1);
+			result = new int[len + 1];
+			for (int i = 0; i < len + 1; i++) result[i] = p1[i];
+		}
+	}
+	else
+	{
+		if (POZ_Z_D(operand1) != 2) //в зависимости от знака и модуля большего числа определяем знак и модуль результата
+		{
+			if (COM_NN_D(p1, p2) != 1)
+			{
+				pre_result = SUB_NN_N(p1, p2);
+				delete[] p1;
+				p1 = NULL;
+				p1 = TRANS_N_Z(pre_result);
+				result = MUL_ZM_Z(p1);
+			}
+			else
+			{
+				pre_result = SUB_NN_N(p2, p1);
+				result = TRANS_N_Z(pre_result);
+			}
+		}
+		else
+		{
+			if (COM_NN_D(p1, p2) != 1)
+			{
+				pre_result = SUB_NN_N(p1, p2);
+				result = TRANS_N_Z(pre_result);
+			}
+			else
+			{
+				pre_result = SUB_NN_N(p2, p1);
+				delete[] p1;
+				p1 = NULL;
+				p1 = TRANS_N_Z(pre_result);
+				result = MUL_ZM_Z(p1);
+			}
+		}
+	}
+	delete[] p1;
+	p1 = NULL;
+	delete[] p2;
+	p2 = NULL;
+	delete[] pre_result;
+	pre_result = NULL;
+	return result;
+}
+
+//вычитание целых чисел
+int* SUB_ZZ_Z(int* operand1, int* operand2)
+{
+	int* p1 = NULL;
+	int* p2 = NULL;
+	int* pre_result = NULL;
+	int* result = NULL;
+	int len;
+
+	p1 = ABS_Z_N(operand1);
+	p2 = ABS_Z_N(operand2);
+
+	if (p1[0] == 0)
+	{
+		pre_result = TRANS_N_Z(p2);
+		if (POZ_Z_D(operand2) == 2) result = MUL_ZM_Z(pre_result);
+		else
+		{
+			delete[] p1;
+			delete[] p2;
+			p1 = NULL;
+			p2 = NULL;
+			return pre_result;
+		}
+		delete[] p1;
+		delete[] p2;
+		delete[] pre_result;
+		p1 = NULL;
+		p2 = NULL;
+		pre_result = NULL;
+		return result;
+	}
+
+	if (POZ_Z_D(operand1) != POZ_Z_D(operand2)) //если числа разных знаков то модуль результата будет суммой модулей чисел
+	{
+		pre_result = ADD_NN_N(p1, p2);
+		delete[] p1;
+		p1 = NULL;
+		p1 = TRANS_N_Z(pre_result);
+		if (POZ_Z_D(operand1) == 1) result = MUL_ZM_Z(p1);
+		else
+		{
+			len = len_search(p1, 1);
+			result = new int[len + 1];
+			for (int i = 0; i < len + 1; i++) result[i] = p1[i];
+		}
+	}
+	else
+	{
+		if (POZ_Z_D(operand1) != 1) //в зависимости от знака и модуля большего числа определяем знак и модуль результата
+		{
+			if (COM_NN_D(p1, p2) != 1)
+			{
+				pre_result = SUB_NN_N(p1, p2);
+				result = TRANS_N_Z(pre_result);
+			}
+			else
+			{
+				pre_result = SUB_NN_N(p2, p1);
+				delete[] p1;
+				p1 = NULL;
+				p1 = TRANS_N_Z(pre_result);
+				result = MUL_ZM_Z(p1);
+			}
+		}
+		else
+		{
+			if (COM_NN_D(p1, p2) != 1)
+			{
+				pre_result = SUB_NN_N(p1, p2);
+				delete[] p1;
+				p1 = NULL;
+				p1 = TRANS_N_Z(pre_result);
+				if (POZ_Z_D(p1) == 0)
+				{
+					delete[] pre_result;
+					delete[] p2;
+					pre_result = NULL;
+					p2 = NULL;
+					return p1;
+				}
+				result = MUL_ZM_Z(p1);
+			}
+			else
+			{
+				pre_result = SUB_NN_N(p2, p1);
+				result = TRANS_N_Z(pre_result);
+			}
+		}
+	}
+	delete[] p1;
+	delete[] p2;
+	delete[] pre_result;
+	p1 = NULL;
+	p2 = NULL;
+	pre_result = NULL;
+	return result;
+}
+
+//умножение целых чисел
+int* MUL_ZZ_Z(int* operand1, int* operand2)
+{
+	int* p1 = NULL;
+	int* p2 = NULL;
+	int* pre_result = NULL;
+	int* result = NULL;
+
+	p1 = ABS_Z_N(operand1);
+	p2 = ABS_Z_N(operand2);
+
+	pre_result = MUL_NN_N(p1, p2); //модуль произведения - произведение модулей чисел
+
+	if (POZ_Z_D(operand1) == POZ_Z_D(operand2)) result = TRANS_N_Z(pre_result); //в зависимости от знаков чисел определяем знак результата
+	else
+	{
+		delete[] p1;
+		p1 = NULL;
+		p1 = TRANS_N_Z(pre_result);
+		result = MUL_ZM_Z(p1);
+	}
+	delete[] p1;
+	delete[] pre_result;
+	delete[] p2;
+	p1 = NULL;
+	p2 = NULL;
+	pre_result = NULL;
+	return result;	
+}
+
+//деление целого числа на положительное целое
+int* DIV_ZZ_Z(int* operand1, int* operand2)
+{
+	int* p1 = NULL;
+	int* p2 = NULL;
+	int* p3 = NULL;
+	int* pre_result = NULL;
+	int* result = NULL;
+
+	p1 = ABS_Z_N(operand1);
+	p2 = ABS_Z_N(operand2);
+	p3 = MOD_NN_N(p1, p2);
+
+	if (POZ_Z_D(operand2) == 2 && COM_NN_D(p1, p2) != 1) //избегаем деления на 0 или на отрицательное число
+	{
+		pre_result = DIV_NN_N(p1, p2); //модуль частного - частное модулей чисел
+
+		if (POZ_Z_D(operand1) != 1)	result = TRANS_N_Z(pre_result); //в зависимости от знаков чисел определяем знак результата
+		else
+		{
+			delete[] p1;
+			delete[] p2;
+			p1 = NULL;
+			p2 = NULL;
+			if (p3[0] != 0)
+			{
+				p1 = ADD_1N_N(pre_result); //если число 1 отрицательно то нужно добавить 1 к модулю результата деления чтобы остаток не был отрицательным
+				p2 = TRANS_N_Z(p1);
+				result = MUL_ZM_Z(p2);
+			}
+			else
+			{
+				p1 = TRANS_N_Z(pre_result);
+				result = MUL_ZM_Z(p1);
+			}
+		}
+	}
+	else
+	{
+		delete[] p1;
+		delete[] p2;
+		delete[] p3;
+		p1 = NULL;
+		p2 = NULL;
+		p3 = NULL;
+		return NULL;
+	}
+	delete[] p1;
+	delete[] p2;
+	delete[] p3;
+	delete[] pre_result;
+	p1 = NULL;
+	p2 = NULL;
+	p3 = NULL;
+	pre_result = NULL;
+	return result;
+}
+
+//деление целого числа на положительное целое с остатком
+int* MOD_ZZ_Z(int* operand1, int* operand2)
+{
+	int* p1 = NULL;
+	int* p2 = NULL;
+	int* pre_result = NULL;
+	int* result = NULL;
+	int len1 = len_search(operand1, 1);
+	int len2 = len_search(operand2, 1);
+
+	pre_result = DIV_ZZ_Z(operand1, operand2);// результат деления
+	if (pre_result == NULL) return NULL;
+	p1 = MUL_ZZ_Z(operand2, pre_result); //делящаяся без остатка часть от числа (меньше по модулю, если 1 число неотрицательно, иначе больше)
+	if (POZ_Z_D(operand1) != 1) result = SUB_ZZ_Z(operand1, p1); 
+	else
+	{
+		p2 = SUB_ZZ_Z(p1, operand1);
+		if (p2[0] != 0) result = MUL_ZM_Z(p2);
+		else
+		{
+			delete[] p1;
+			delete[] pre_result;
+			p1 = NULL;
+			pre_result = NULL;
+			return p2;
+		}
+	}
+
+	delete[] p1;
+	delete[] pre_result;
+	p1 = NULL;
+	pre_result = NULL;
+	return result;
+}
+
+
+//модуль Q
+
+
+//сокращение дроби
+FR* RED_Q_Q(FR* fraction)
+{
+	FR* result = new FR;
+	result->next = NULL;
+	result->numerator = NULL;
+	result->denominator = NULL;
+	int* gcd = NULL;
+	int* stack = NULL;
+	int len;
+
+	if (POZ_Z_D(fraction->numerator) == 0) //если числитель 0 то пишем в знаменатель 1
+	{
+		result->numerator = new int[3];
+		result->numerator[0] = 0;
+		result->numerator[1] = 0;
+		result->numerator[2] = -1;
+		delete[] result->denominator; 
+		result->denominator = 0;
+		result->denominator = new int[3];
+		result->denominator[0] = 0;
+		result->denominator[1] = 1;
+		result->denominator[2] = -1;
+	}
+	else
+	{
+		result->numerator = ABS_Z_N(fraction->numerator);
+		result->denominator = ABS_Z_N(fraction->denominator);
+		gcd = GCF_NN_N(result->numerator, result->denominator); //поиск gcd числителя и знаменателя
+
+		delete[] result->numerator;
+		delete[] result->denominator;
+		result->numerator = NULL;
+		result->denominator = NULL;
+
+		stack = TRANS_N_Z(gcd); //преобразование gcd в целое
+		result->numerator = DIV_ZZ_Z(fraction->numerator, stack); //деление числителя и знаменателя на gcd 
+		result->denominator = DIV_ZZ_Z(fraction->denominator, stack);
+		delete[] stack;
+		delete[] gcd;
+		stack = NULL;
+		gcd = NULL;
+	}
+	return result;	
+}
+
+//проверка на целое
+int INT_Q_B(FR* fraction)
+{
+	int* stack;
+
+	stack = MOD_ZZ_Z(fraction->numerator, fraction->denominator); //остаток от деления числителя на знаменатель
+
+	if (stack == NULL) //если знаменатель больше то 0
+	{
+		delete[] stack;
+		stack = NULL;
+		return 0;
+	}
+	if (POZ_Z_D(stack) != 0) //если остаток не равен 0 то 0
+	{
+		delete[] stack;
+		stack = NULL;
+		return 0;
+	}
+	delete[] stack; //иначе 1
+	stack = NULL;
+	return 1;	
+}
+
+//преобразование целого в дробное
+FR* TRANS_Z_Q(int* number)
+{
+	FR* result = new FR;
+	result->next = NULL;
+	int len;
+
+	len = len_search(number, 1);
+	result->numerator = new int[len + 1];
+	for (int i = 0; i < len + 1; i++) result->numerator[i] = number[i]; //перенос числа в числитель
+	result->denominator = new int[2];
+	result->denominator[0] = 0;
+	result->denominator[1] = 1; //в знаменателе 1
+
+	return result;
+}
+
+//преобразование дробного в целое(знаменатель = 1)
+int* TRANS_Q_Z(FR* fraction)
+{
+	int* result = NULL;
+	int len;
+
+	len = len_search(fraction->denominator, 1);
+
+	if (len == 1 && fraction->denominator[1] == 1)
+	{
+		len = len_search(fraction->numerator, 1);
+		result = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) result[i] = fraction->numerator[i];	
+	}
+	return result;
+}
+
+//сложение дробей
+FR* ADD_QQ_Q(FR* operand1, FR* operand2)
+{
+	FR* result = NULL;
+	FR* stack = new FR;
+	int* stack1 = NULL;
+	int* stack2 = NULL;
+	int* stack3 = NULL;
+	int* stack4 = NULL;
+	
+	stack1 = ABS_Z_N(operand1->denominator);
+	stack2 = ABS_Z_N(operand2->denominator);
+	stack3 = LCM_NN_N(stack1, stack2);
+	stack->denominator = TRANS_N_Z(stack3); //знаменатель результата - lcm знаменателей
+
+	delete[] stack1;
+	delete[] stack2;
+	delete[] stack3;
+	stack1 = NULL;
+	stack2 = NULL;
+	stack3 = NULL;
+
+	stack1 = DIV_ZZ_Z(stack->denominator, operand1->denominator);
+	stack2 = DIV_ZZ_Z(stack->denominator, operand2->denominator);
+	stack3 = MUL_ZZ_Z(stack1, operand1->numerator);
+	stack4 = MUL_ZZ_Z(stack2, operand2->numerator); //приведение к общему знаменателю
+
+	stack->numerator = ADD_ZZ_Z(stack3, stack4); //сложение
+
+	delete[] stack1;
+	delete[] stack2;
+	delete[] stack3;
+	delete[] stack4;
+	stack1 = NULL;
+	stack2 = NULL;
+	stack3 = NULL;
+	stack4 = NULL;
+
+	result = RED_Q_Q(stack); //упрощение дроби
+	
+	delete[] stack->numerator;
+	delete[] stack->denominator;
+	delete stack;
+	
+	return result;
+}
+
+//вычитание дробей
+FR* SUB_QQ_Q(FR* operand1, FR* operand2)
+{
+	FR* result = NULL;
+	FR* stack = new FR;
+	int* stack1 = NULL;
+	int* stack2 = NULL;
+	int* stack3 = NULL;
+	int* stack4 = NULL;
+
+	stack1 = ABS_Z_N(operand1->denominator);
+	stack2 = ABS_Z_N(operand2->denominator);
+	stack3 = LCM_NN_N(stack1, stack2);
+	stack->denominator = TRANS_N_Z(stack3);
+
+	delete[] stack1;
+	delete[] stack2;
+	delete[] stack3;
+	stack1 = NULL;
+	stack2 = NULL;
+	stack3 = NULL;
+
+	stack1 = DIV_ZZ_Z(stack->denominator, operand1->denominator);
+	stack2 = DIV_ZZ_Z(stack->denominator, operand2->denominator);
+	stack3 = MUL_ZZ_Z(stack1, operand1->numerator);
+	stack4 = MUL_ZZ_Z(stack2, operand2->numerator);
+
+	stack->numerator = SUB_ZZ_Z(stack3, stack4);
+
+	delete[] stack1;
+	delete[] stack2;
+	delete[] stack3;
+	delete[] stack4;
+	stack1 = NULL;
+	stack2 = NULL;
+	stack3 = NULL;
+	stack4 = NULL;
+
+	result = RED_Q_Q(stack); //упрощение дроби
+
+	delete[] stack->numerator;
+	delete[] stack->denominator;
+	delete stack;
+
+	return result;
+}
+
+//умножение дробей
+FR* MUL_QQ_Q(FR* operand1, FR* operand2)
+{
+	FR* stack = new FR;
+	FR* result = NULL;
+
+	stack->denominator = MUL_ZZ_Z(operand1->denominator, operand2->denominator); //умножение числителей и знаменателей дробей
+	stack->numerator = MUL_ZZ_Z(operand1->numerator, operand2->numerator);
+
+	result = RED_Q_Q(stack); //упрощение дроби
+
+	delete[] stack->denominator;
+	delete[] stack->numerator;
+	delete stack;
+
+	return result;
+}
+
+//деление дробей
+FR* DIV_QQ_Q(FR* operand1, FR* operand2)
+{
+	if (POZ_Z_D(operand2->numerator) == 0) return NULL;
+
+	FR* stack = new FR;
+	FR* result = NULL;
+
+	stack->denominator = MUL_ZZ_Z(operand1->denominator, operand2->numerator); //умножение "крест-накрест"
+	stack->numerator = MUL_ZZ_Z(operand1->numerator, operand2->denominator);
+
+	result = RED_Q_Q(stack); //упрощение дроби
+
+	delete[] stack->denominator;
+	delete[] stack->numerator;
+	delete stack;
+
+	if (POZ_Z_D(result->denominator) == 1)
+	{
+		if (POZ_Z_D(result->numerator) == 1)
+		{
+			result->numerator[0] = 0;
+			result->denominator[0] = 0;
+		}
+		if (POZ_Z_D(result->numerator) == 2)
+		{
+			result->numerator[0] = 1;
+			result->denominator[0] = 0;
+		}
+	}
+	
+	return result;
+}
+
+
+//модуль P
+
+
+//сложение многочленов
+FR* ADD_PP_P(FR* polynom1, FR* polynom2)
+{
+	FR* stack = polynom1;
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	bool flag = false;
+	int len;
+	while (stack != NULL)
+	{
+		if (pol_head == NULL)
+		{
+			new_polynom = new FR;
+			new_polynom->next = NULL;
+			pol_head = new_polynom;
+		}
+		else
+		{
+			new_polynom->next = new FR;
+			new_polynom = new_polynom->next;
+			new_polynom->next = NULL;
+		}
+		len = len_search(stack->degree, 0);
+		new_polynom->degree = new int[len];
+		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
+		len = len_search(stack->numerator, 1);
+		new_polynom->numerator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
+		len = len_search(stack->denominator, 1);
+		new_polynom->denominator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
+		stack = stack->next;
+		if (stack == NULL && flag == false)
+		{
+			stack = polynom2;
+			flag = true;
+		}
+	}
+	pol_head = sort_P(pol_head);
+	return pol_head;
+}
+
+//вычитание многочленов
+FR* SUB_PP_P(FR* polynom1, FR* polynom2)
+{
+	FR* stack = polynom1;
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	bool flag = false;
+	int len;
+	while (stack != NULL)
+	{
+		if (pol_head == NULL)
+		{
+			new_polynom = new FR;
+			new_polynom->next = NULL;
+			pol_head = new_polynom;
+		}
+		else
+		{
+			new_polynom->next = new FR;
+			new_polynom = new_polynom->next;
+			new_polynom->next = NULL;
+		}
+		len = len_search(stack->degree, 0);
+		new_polynom->degree = new int[len];
+		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
+		len = len_search(stack->numerator, 1);
+		new_polynom->numerator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
+		if (flag == true)
+		{
+			if (new_polynom->numerator[0] == 0) new_polynom->numerator[0] = 1;
+			else new_polynom->numerator[0] = 0;
+		}
+		len = len_search(stack->denominator, 1);
+		new_polynom->denominator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
+		stack = stack->next;
+		if (stack == NULL && flag == false)
+		{
+			stack = polynom2;
+			flag = true;
+		}
+	}
+	pol_head = sort_P(pol_head);
+	return pol_head;
+}
+
+//умножение многочлена на рациональное число
+FR* MUL_PQ_P(FR* polynom, FR* fraction)
+{
+	FR* stack = polynom;
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	int len;
+	while (stack != NULL)
+	{
+		if (pol_head == NULL)
+		{
+			new_polynom = MUL_QQ_Q(stack, fraction);
+			pol_head = new_polynom;
+			new_polynom->next = NULL;
+		}
+		else
+		{
+			new_polynom->next = MUL_QQ_Q(stack, fraction);
+			new_polynom = new_polynom->next;
+			new_polynom->next = NULL;
+		}
+		len = len_search(stack->degree, 0);
+		new_polynom->degree = new int[len];
+		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
+		stack = stack->next;
+	}
+	pol_head = sort_P(pol_head);
+	return pol_head;
+}
+
+//умножение многочлена на x^k
+FR* MUL_Pxk_P(FR* polynom, int* k)
+{
+	FR* stack = polynom;
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	int len;
+	while (stack != NULL)
+	{
+		if (pol_head == NULL)
+		{
+			new_polynom = new FR;
+			new_polynom->next = NULL;
+			pol_head = new_polynom;
+		}
+		else
+		{
+			new_polynom->next = new FR;
+			new_polynom = new_polynom->next;
+			new_polynom->next = NULL;
+		}
+		new_polynom->degree = ADD_NN_N(stack->degree, k);
+		len = len_search(stack->numerator, 1);
+		new_polynom->numerator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
+		len = len_search(stack->denominator, 1);
+		new_polynom->denominator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
+		stack = stack->next;
+	}
+	pol_head = sort_P(pol_head);
+	return pol_head;
+}
+
+//старший коэффициент многочлена
+FR* LED_P_Q(FR* polynom)
+{
+	FR* stack = polynom;
+	FR* result = new FR;
+	int len;
+	len = len_search(stack->numerator, 1);
+	result->numerator = new int[len + 1];
+	for (int i = 0; i < len + 1; i++) result->numerator[i] = stack->numerator[i];
+	len = len_search(stack->denominator, 1);
+	result->denominator = new int[len + 1];
+	for (int i = 0; i < len + 1; i++) result->denominator[i] = stack->denominator[i];
+	return result;
+}
+
+//степень многочлена
+int* DEG_P_N(FR* polynom)
+{
+	FR* stack = polynom;
+	int* result = NULL;
+	if (stack != NULL)
+	{
+		int len;
+		len = len_search(stack->degree, 0);
+		result = new int[len];
+		for (int i = 0; i < len; i++) result[i] = stack->degree[i];
+	}
+	return result;
+}
+
+//вынесение НОК знаменателей и НОД числителей коэффициентов многочлена
+FR* FAC_P_Q(FR* polynom)
+{
+	FR* result = new FR;
+	FR* stack = polynom;
+	int* num = NULL;
+	int* num_stack = NULL;
+	int* gcd = new int[1];
+	int* lcm = new int[1];
+	int len = 0;
+	gcd[0] = 0;
+	lcm[0] = 1;
+	while (stack != NULL)
+	{
+		num = ABS_Z_N(stack->numerator);
+		num_stack = GCF_NN_N(gcd, num);
+		delete[] num;
+		num = NULL;
+		delete[] gcd;
+		gcd = NULL;
+		len = len_search(num_stack, 0);
+		gcd = new int[len];
+		for (int i = 0; i < len; i++) gcd[i] = num_stack[i];
+		delete[] num_stack;
+		num_stack = NULL;
+		
+		num = ABS_Z_N(stack->denominator);
+		num_stack = LCM_NN_N(lcm, num);
+		delete[] num;
+		num = NULL;
+		delete[] lcm;
+		lcm = NULL;
+		len = len_search(num_stack, 0);
+		lcm = new int[len];
+		for (int i = 0; i < len; i++) lcm[i] = num_stack[i];
+		delete[] num_stack;
+		num_stack = NULL;
+
+		stack = stack->next;
+	}
+	result->numerator = TRANS_N_Z(gcd);
+	result->denominator = TRANS_N_Z(lcm);
+	delete[] gcd;
+	delete[] lcm;
+	gcd = NULL;
+	lcm = NULL;
+	return result;
+}
+
+//умножение многочленов
+FR* MUL_PP_P(FR* polynom1, FR* polynom2)
+{
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	FR* stack1 = polynom1;
+	FR* stack2 = polynom2;
+	FR* koef = NULL;
+	while (stack1 != NULL)
+	{
+		stack2 = polynom2;
+		while (stack2 != NULL)
+		{
+			koef = MUL_PQ_P(stack1, stack2);
+			koef->next = NULL;
+			if (pol_head == NULL)
+			{
+				new_polynom = MUL_Pxk_P(koef, stack2->degree);
+				pol_head = new_polynom;
+				new_polynom->next = NULL;
+			}
+			else
+			{
+				new_polynom->next = MUL_Pxk_P(koef, stack2->degree);
+				new_polynom = new_polynom->next;
+				new_polynom->next = NULL;
+			}
+			delete[] koef->degree;
+			delete[] koef->numerator;
+			delete[] koef->denominator;
+			delete koef;
+			koef = NULL;
+			stack2 = stack2->next;
+		}
+		stack1 = stack1->next;
+	}
+	pol_head = sort_P(pol_head);
+	return pol_head;
+}
+
+//деление многочленов
+FR* DIV_PP_P(FR* polynom1, FR* polynom2)
+{
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	FR* stack1 = copy_P(polynom1);
+	FR* stack2 = copy_P(polynom2);
+	FR* stack = NULL;
+	int* pol1_deg = DEG_P_N(stack1);
+	int* pol2_deg = DEG_P_N(stack2);
+
+	while (COM_NN_D(pol1_deg, pol2_deg) != 1)
+	{
+		if (pol_head == NULL)
+		{
+			new_polynom = DIV_QQ_Q(stack1, stack2);
+			new_polynom->next = NULL;
+			pol_head = new_polynom;
+		}
+		else
+		{
+			new_polynom->next = DIV_QQ_Q(stack1, stack2);
+			new_polynom = new_polynom->next;
+			new_polynom->next = NULL;
+		}
+		new_polynom->degree = SUB_NN_N(pol1_deg, pol2_deg);
+		stack = MUL_PP_P(stack2, new_polynom);
+		delete_P(stack2);
+		stack2 = SUB_PP_P(stack1, stack);
+		delete_P(stack1);
+		stack1 = copy_P(stack2);
+		delete_P(stack2);
+		delete_P(stack);
+		stack2 = copy_P(polynom2);
+		delete[] pol1_deg;
+		pol1_deg = NULL;
+		if (stack1 != NULL) pol1_deg = DEG_P_N(stack1);
+		else break;
+	}
+	delete_P(stack1);
+	delete_P(stack2);
+	delete[] pol1_deg;
+	delete[] pol2_deg;
+	pol1_deg = NULL;
+	pol2_deg = NULL;
+	return pol_head;
+}
+
+//остаток от деления многочленов
+FR* MOD_PP_P(FR* polynom1, FR* polynom2)
+{
+	FR* div_stack = DIV_PP_P(polynom1, polynom2);
+	FR* mul_stack = MUL_PP_P(polynom2, div_stack);
+	FR* stack1 = copy_P(polynom1);
+	FR* new_polynom = SUB_PP_P(stack1, mul_stack);
+	delete_P(div_stack);
+	delete_P(mul_stack);
+	delete_P(stack1);
+	return new_polynom;
+}
+
+//НОД многочленов
+FR* GCF_PP_P(FR* polynom1, FR* polynom2)
+{
+	FR* stack1 = copy_P(polynom1);
+	FR* stack2 = copy_P(polynom2);
+	FR* stack = NULL;
+	int* pol1_deg = NULL;
+	int* pol2_deg = NULL;
+	
+	if (stack1 != NULL || stack2 != NULL)
+	{
+		while (true)
+		{
+			if (stack1 == NULL)
+			{
+				delete[] pol1_deg;
+				delete[] pol2_deg;
+				pol1_deg = NULL;
+				pol2_deg = NULL;
+				return stack2;
+			}
+			if (stack2 == NULL)
+			{
+				delete[] pol1_deg;
+				delete[] pol2_deg;
+				pol1_deg = NULL;
+				pol2_deg = NULL;
+				return stack1;
+			}
+			pol1_deg = DEG_P_N(stack1);
+			pol2_deg = DEG_P_N(stack2);
+			if (COM_NN_D(pol1_deg, pol2_deg) != 1) stack = MOD_PP_P(stack1, stack2);
+			else stack = MOD_PP_P(stack2, stack1);
+			if (COM_NN_D(pol1_deg, pol2_deg) != 1)
+			{
+				delete_P(stack1);
+				delete[] pol1_deg;
+				pol1_deg = NULL;
+				stack1 = copy_P(stack);
+				pol1_deg = DEG_P_N(stack1);
+			}
+			else
+			{
+				delete_P(stack2);
+				delete[] pol2_deg;
+				pol2_deg = NULL;
+				stack2 = copy_P(stack);
+				pol2_deg = DEG_P_N(stack2);
+			}
+			delete_P(stack);
+		}
+	}
+	else return NULL;
+
+}
+
+//производная
+FR* DER_P_P(FR* polynom)
+{
+	FR* stack = polynom;
+	FR* new_polynom = NULL;
+	FR* pol_head = NULL;
+	FR* koef;
+	int* decrement = new int[1];
+	decrement[0] = 1;
+
+	while (stack != NULL)
+	{
+		int* z_deg = TRANS_N_Z(stack->degree);
+		koef = TRANS_Z_Q(z_deg);
+		delete[] z_deg;
+		z_deg = NULL;
+		if (pol_head == NULL)
+		{
+			new_polynom = MUL_QQ_Q(stack, koef);
+			pol_head = new_polynom;
+			new_polynom->next = NULL;
+		}
+		else
+		{
+			new_polynom->next = MUL_QQ_Q(stack, koef);
+			new_polynom = new_polynom->next;
+			new_polynom->next = NULL;
+		}
+		delete[] koef->numerator;
+		delete[] koef->denominator;
+		delete koef;
+		if (new_polynom->numerator[1] != 0)	new_polynom->degree = SUB_NN_N(stack->degree, decrement);
+		else
+		{
+			new_polynom->degree = new int[1];
+			new_polynom->degree[0] = 0;
+		}
+		stack = stack->next;
+	}
+	delete[] decrement;
+	decrement = NULL;
+	pol_head = sort_P(pol_head);
+	return pol_head;
+}
+
+//разложение на свободные от квадратов множители(немного не понял что здесь сделать надо)
+FR* NMR_P_P(FR* polynom)
+{
+	FR* der = DER_P_P(polynom);
+	FR* stack = GCF_PP_P(polynom, der);
+	delete_P(der);
+	FR* result = DIV_PP_P(polynom, stack);
+	delete_P(stack);
+	return result;
+}
+
+
+//ввод
+int* input_N(int n, int counter)
+{
+	int maxl = 20;
+	int* number = new int[maxl];
+	int* p = NULL;
+	char num;
+	bool first_flag = false;
+	bool null_flag = false;
+	int len = 0;
+	while (true)
+	{
+		system("cls");
+		if (counter == 0) cout << "Input number " << n << ": ";
+		else
+		{
+			cout << "Polynom " << n << " is sum of (koefficient)*x^(degree)" << endl;
+			cout << "Input degree " << counter << ": ";
+		}
+		num_output(number, 0, 0, 1);
+		num = _getch();
+		if (num >= key0 && num <= key9 && len < maxl && null_flag == false)
+		{
+			first_flag = true;
+			number[len] = num - '0';
+			if (num == key0 && len == 0) null_flag = true;
+			len++;
+		}
+		if (num == _backspace && first_flag == true)
+		{
+			len--;
+			number[len] = -1;
+			if (len == 0)
+			{
+				first_flag = false;
+				null_flag = false;
+			}
+		}
+		if (num == _enter && first_flag == true)
+		{
+			system("cls");
+			break;
+		}
+		if (len == maxl)
+		{
+			p = new int[maxl];
+			for (int i = 0; i < maxl; i++) p[i] = number[i];
+			delete[] number;
+			number = NULL;
+			number = new int[maxl + 20];
+			for (int i = 0; i < maxl; i++) number[i] = p[i];
+			delete[] p;
+			p = NULL;
+			maxl += 20;
+		}
+	}
+	return number;
+}
+int* input_Z(int n)
+{
+	int maxl = 20;
+	int* number = new int[maxl];
+	int* p = NULL;
+	char num;
+	bool first_flag = false;
+	bool null_flag = false;
+	int len = 0;
+	while (true)
+	{
+		system("cls");
+		cout << "Input number " << n << ": ";	
+		num_output(number, 1, 0, 1);
+		num = _getch();
+		if (len == 0)
+		{
+			if (num == '-')
+			{
+				number[len] = 1;
+				len++;
+				continue;
+			}
+			if (num >= key0 && num <= key9)
+			{
+				number[len] = 0;
+				len++;
+				number[len] = num - '0';
+				len++;
+				if (num == key0) null_flag = true;
+				first_flag = true;
+				continue;
+			}
+		}
+		if (len > 0 && null_flag == false && num >= key0 && num <= key9)
+		{
+			if (len == 1 && num == key0) continue;
+			first_flag = true;
+			number[len] = num - '0';
+			len++;
+		}
+		if (num == _backspace && len > 0)
+		{
+			if (len > 1)
+			{
+				len--;
+				number[len] = -1;
+			}
+			if (len == 1)
+			{
+				len--;
+				number[len] = -1;
+				first_flag = false;
+				null_flag = false;
+				if (number[len] == 0) number[len] = -1;
+			}
+		}
+		if (num == _enter && first_flag == true)
+		{
+			system("cls");
+			break;
+		}
+		if (len == maxl)
+		{
+			p = new int[maxl];
+			for (int i = 0; i < maxl; i++) p[i] = number[i];
+			delete[] number;
+			number = NULL;
+			number = new int[maxl + 20];
+			for (int i = 0; i < maxl; i++) number[i] = p[i];
+			delete[] p;
+			p = NULL;
+			maxl += 20;
+		}
+	}
+	return number;
+}
+FR* input_Q(int n, int counter, bool koef)
+{
+	int len = 0;
+	int maxl = 20;
+	int* p = NULL;
+	char num;
+	bool first_flag = false;
+	bool null_flag = false;
+	bool num_flag = false;
+	FR* fraction = new FR;
+	fraction->next = NULL;
+	fraction->numerator = new int[maxl];
+	fraction->denominator = new int[maxl];
+
+	while (true)
+	{
+		system("cls");
+		if (counter == 0) cout << "Input fraction " << n << ": ";
+		else
+		{
+			cout << "Polynom " << n << " is sum of (koefficient)*x^(degree)" << endl;
+			cout << "Input koefficient " << counter << ": ";
+		}
+		num_output(fraction->numerator, 1, 0, 1);
+		num = _getch();
+		if (len == 0)
+		{
+			if (num == '-')
+			{
+				fraction->numerator[len] = 1;
+				len++;
+				continue;
+			}
+			if (num >= key0 + koef && num <= key9)
+			{
+				fraction->numerator[len] = 0;
+				len++;
+				fraction->numerator[len] = num - '0';
+				len++;
+				if (num == key0) null_flag = true;
+				first_flag = true;
+				continue;
+			}
+		}
+		if (len > 0 && null_flag == false && num >= key0 && num <= key9)
+		{
+			if (len == 1 && num == key0) continue;
+			first_flag = true;
+			fraction->numerator[len] = num - '0';
+			len++;
+		}
+		if (num == _backspace && len > 0)
+		{
+			if (len > 1)
+			{
+				len--;
+				fraction->numerator[len] = -1;
+			}
+			if (len == 1)
+			{
+				len--;
+				fraction->numerator[len] = -1;
+				first_flag = false;
+				null_flag = false;
+				if (fraction->numerator[len] == 0) fraction->numerator[len] = -1;
+			}
+		}
+		if (num == '/' && first_flag == true)
+		{
+			if (null_flag == true)
+			{
+				fraction->denominator[0] = 0;
+				fraction->denominator[1] = 1;
+				system("cls");
+				return fraction;
+			}
+			break;
+		}
+		if (num == _enter && first_flag == true)
+		{
+			fraction->denominator[0] = 0;
+			fraction->denominator[1] = 1;
+			system("cls");
+			return fraction;
+		}
+		if (len == maxl)
+		{
+			p = new int[maxl];
+			for (int i = 0; i < maxl; i++) p[i] = fraction->numerator[i];
+			delete[] fraction->numerator;
+			fraction->numerator = NULL;
+			fraction->numerator = new int[maxl + 20];
+			for (int i = 0; i < maxl; i++) fraction->numerator[i] = p[i];
+			delete[] p;
+			p = NULL;
+			maxl += 20;
+		}
+	}
+	num_flag = true;
+	first_flag = false;
+	null_flag = false;
+	maxl = 20;
+	len = 0;
+	while (true)
+	{
+		system("cls");
+		if (counter == 0) cout << "Input fraction " << n << ": ";
+		else
+		{
+			cout << "Polynom " << n << " is sum of (koefficient)*x^(degree)" << endl;
+			cout << "Input koefficient " << counter << ": ";
+		}
+		num_output_Q(fraction, 1);
+		num = _getch();
+		if (len == 0 && num >= key1 && num <= key9)
+		{
+			fraction->denominator[len] = 0;
+			len++;
+			fraction->denominator[len] = num - '0';
+			len++;
+			first_flag = true;
+			continue;
+		}
+		if (len > 0 && null_flag == false && num >= key0 && num <= key9)
+		{
+			first_flag = true;
+			fraction->denominator[len] = num - '0';
+			len++;
+		}
+		if (num == _backspace && len > 0)
+		{
+			if (len > 1)
+			{
+				len--;
+				fraction->denominator[len] = -1;
+			}
+			if (len == 1)
+			{
+				len--;
+				fraction->denominator[len] = -1;
+				first_flag = false;
+				if (fraction->denominator[len] == 0) fraction->denominator[len] = -1;
+			}
+		}
+		if (num == _enter && first_flag == true)
+		{
+			system("cls");
+			break;
+		}
+		if (len == maxl)
+		{
+			p = new int[maxl];
+			for (int i = 0; i < maxl; i++) p[i] = fraction->denominator[i];
+			delete[] fraction->denominator;
+			fraction->denominator = NULL;
+			fraction->denominator = new int[maxl + 20];
+			for (int i = 0; i < maxl; i++) fraction->denominator[i] = p[i];
+			delete[] p;
+			p = NULL;
+			maxl += 20;
+		}
+	}
+	return fraction;
+}
+FR* input_P(int n)
+{
+	FR* pol_head = NULL;
+	FR* polynom = NULL;
+	int counter = 1;
+	int len = 0;
+	int maxl = 20;
+	char num;
+	int k = 0;
+	bool first_flag = false;
+	while (true)
+	{	
+		if (first_flag == false)
+		{
+			polynom = input_Q(n, counter, 1);
+			polynom->degree = input_N(0, counter);
+			pol_head = polynom;
+			first_flag = true;
+		}
+		else
+		{
+			polynom->next = input_Q(n, counter, 1);
+			polynom = polynom->next;
+			polynom->degree = input_N(0, counter);
+		}
+		polynom->next = NULL;
+		polynom = pol_head;
+		int i = 1;
+		while (true)
+		{
+			cout << "Koefficient " << i << ": ";
+			num_output_Q(polynom, 1);
+			cout << "Degree " << i << ": ";
+			num_output(polynom->degree, 0, 0, 1);
+			i++;
+			if (polynom->next != NULL) polynom = polynom->next;
+			else break;
+		}
+		
+		num = _getch();
+		if (num == _esc) break;
+		else counter++;
+	}
+	polynom = pol_head;
+	polynom = sort_P(pol_head);
+	return polynom;
+}
+	
+//меню
+void module_menu(int choice)
+{
+	system("cls");
+	cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
+	int i = 1;
+	for (string menutxt : menu_module)
+	{
+		string marker;
+		if (choice == i) marker = " >"; else marker = "  ";
+		char num = i + '0';
+		string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
+		cout << menuline << endl;
+		i++;
+	}
+	cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+}
+void menu_N(int choice, bool action_flag)
+{
+	system("cls");
+	cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
+	int i = 1;
+	for (string menutxt : N_menu)
+	{
+		string marker;
+		if (choice == i) marker = " >"; else marker = "  ";
+		char num = i + '0';
+		string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
+		cout << menuline << endl;
+		i++;
+	}
+	cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+	if (choice != 1)
+	{
+		cout << "Number 1: ";
+		num_output(number1, 0, 0, 1);
+		cout << "Number 2: ";
+		num_output(number2, 0, 0, 1);
+		cout << "Result: ";
+	}
+	if (action_flag == true)
+	{
+		int* result = NULL;
+		switch (choice)
+		{
+		case 1:
+		{
+			if (number1 == NULL && number2 == NULL)
+			{
+				number1 = input_N(1, 0);
+				number2 = input_N(2, 0);
+				menu_N(choice, 0);
+				cout << "Number 1: ";
+				num_output(number1, 0, 0, 1);
+				cout << "Number 2: ";
+				num_output(number2, 0, 0, 1);
+			}
+			break;
+		}
+		case 2:
+		{
+			result = ADD_NN_N(number1, number2);
+			if (result != NULL) num_output(result, 0, 0, 1);
+			break;
+		}
+		case 3:
+		{
+			result = SUB_NN_N(number1, number2);
+			if (result != NULL) num_output(result, 0, 0, 1);
+			else cout << "Error! Negative result.";
+			break;
+		}
+		case 4:
+		{
+			result = MUL_NN_N(number1, number2);
+			if (result != NULL) num_output(result, 0, 0, 1);
+			break;
+		}
+		case 5:
+		{
+			result = DIV_NN_N(number1, number2);
+			if (result != NULL) num_output(result, 0, 0, 1);
+			else cout << "Error! Second number is larger or division by zero.";
+			break;
+		}
+		case 6:
+		{
+			result = MOD_NN_N(number1, number2);
+			if (result != NULL) num_output(result, 0, 0, 1);
+			else cout << "Error! Second number is larger or division by zero.";
+			break;
+		}
+		case 7:
+		{
+			result = GCF_NN_N(number1, number2);
+			if (result != NULL) num_output(result, 0, 0, 1);
+			else cout << "Error! GCD(0,0).";
+			break;
+		}
+		case 8:
+		{
+			result = LCM_NN_N(number1, number2);
+			if (result != NULL) num_output(result, 0, 0, 1);
+			else cout << "Error! Supposed division by zero.";
+			break;
+		}
+		}
+		delete[] result;
+		result = NULL;
+	}
+}
+void menu_Z(int choice, bool action_flag)
+{
+	system("cls");
+	cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
+	int i = 1;
+	for (string menutxt : Z_menu)
+	{
+		string marker;
+		if (choice == i) marker = " >"; else marker = "  ";
+		char num = i + '0';
+		string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
+		cout << menuline << endl;
+		i++;
+	}
+	cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+	if (choice != 1)
+	{
+		cout << "Number 1: ";
+		num_output(number1, 1, 0, 1);
+		cout << "Number 2: ";
+		num_output(number2, 1, 0, 1);
+		if (choice != menusize_Z) cout << "Result: ";
+	}
+	if (action_flag == true)
+	{
+		int* result = NULL;
+		switch (choice)
+		{
+		case 1:
+		{
+			if (number1 == NULL && number2 == NULL)
+			{
+				number1 = input_Z(1);
+				number2 = input_Z(2);
+				menu_Z(choice, 0);
+				cout << "Number 1: ";
+				num_output(number1, 1, 0, 1);
+				cout << "Number 2: ";
+				num_output(number2, 1, 0, 1);
+			}
+			break;
+		}
+		case 2:
+		{
+			result = ADD_ZZ_Z(number1, number2);
+			if (result != NULL) num_output(result, 1, 0, 1);
+			break;
+		}
+		case 3:
+		{
+			result = SUB_ZZ_Z(number1, number2);
+			if (result != NULL) num_output(result, 1, 0, 1);
+			break;
+		}
+		case 4:
+		{
+			result = MUL_ZZ_Z(number1, number2);
+			if (result != NULL) num_output(result, 1, 0, 1);
+			break;
+		}
+		case 5:
+		{
+			result = DIV_ZZ_Z(number1, number2);
+			if (result != NULL) num_output(result, 1, 0, 1);
+			else cout << "Error! Second number is larger or negative or division by zero.";
+			break;
+		}
+		case 6:
+		{
+			result = MOD_ZZ_Z(number1, number2);
+			if (result != NULL) num_output(result, 1, 0, 1);
+			else cout << "Error! Second number is larger or negative or division by zero.";
+			break;
+		}
+		}
+		delete[] result;
+		result = NULL;
+	}
+}
+void menu_Q(int choice, bool action_flag)
+{
+	system("cls");
+	cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
+	int i = 1;
+	for (string menutxt : Q_menu)
+	{
+		string marker;
+		if (choice == i) marker = " >"; else marker = "  ";
+		char num = i + '0';
+		string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
+		cout << menuline << endl;
+		i++;
+	}
+	cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+	if (choice != 1)
+	{
+		cout << "Fraction 1: ";
+		num_output_Q(fraction1, 1);
+		cout << "Fraction 2: ";
+		num_output_Q(fraction2, 1);
+		if (choice != menusize_Z) cout << "Result: ";
+	}
+	if (action_flag == true)
+	{
+		int* trans_result = NULL;
+		FR* result = NULL;
+		switch (choice)
+		{
+		case 1:
+		{
+			if (fraction1 == NULL && fraction2 == NULL)
+			{
+				fraction1 = input_Q(1, 0, 0);
+				fraction2 = input_Q(2, 0, 0);
+				menu_Q(choice, 0);
+				cout << "Fraction 1: ";
+				num_output_Q(fraction1, 1);
+				cout << "Fraction 2: ";
+				num_output_Q(fraction2, 1);
+			}
+			break;
+		}
+		case 2:
+		{
+			result = ADD_QQ_Q(fraction1, fraction2);
+			trans_result = TRANS_Q_Z(result);
+			if (result != NULL && trans_result == NULL) num_output_Q(result, 1);
+			else num_output(trans_result, 1, 0, 1);
+			break;
+		}
+		case 3:
+		{
+			result = SUB_QQ_Q(fraction1, fraction2);
+			trans_result = TRANS_Q_Z(result);
+			if (result != NULL && trans_result == NULL) num_output_Q(result, 1);
+			else num_output(trans_result, 1, 0, 1);
+			break;
+		}
+		case 4:
+		{
+			result = MUL_QQ_Q(fraction1, fraction2);
+			trans_result = TRANS_Q_Z(result);
+			if (result != NULL && trans_result == NULL) num_output_Q(result, 1);
+			else num_output(trans_result, 1, 0, 1);
+			break;
+		}
+		case 5:
+		{
+			result = DIV_QQ_Q(fraction1, fraction2);
+			if (result != NULL) trans_result = TRANS_Q_Z(result);
+			if (result == NULL && trans_result == NULL)
+			{
+				cout << "Error! Division by zero.";
+				break;
+			}
+			if (result != NULL && trans_result == NULL) num_output_Q(result, 1);
+			else num_output(trans_result, 1, 0, 1);
+			break;
+		}
+		}
+		delete[] trans_result;
+		delete result;
+		result = NULL;
+	}
+}
+void menu_P(int choice, bool action_flag)
+{
+	system("cls");
+	cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
+	int i = 1;
+	for (string menutxt : P_menu)
+	{
+		string marker;
+		if (choice == i) marker = " >"; else marker = "  ";
+		char num = i + '0';
+		string menuline;
+		if (i < 10)	menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		else menuline = (char)186 + marker + "10. " + menutxt;
+		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
+		cout << menuline << endl;
+		i++;
+	}
+	cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+	if (choice != 1)
+	{
+		cout << "Polynom 1: ";
+		num_output_P(polynom1, 1);
+		cout << "Polynom 2: ";
+		num_output_P(polynom2, 1);
+		if (choice != menusize_P && choice != 8) cout << "Result: ";
+	}
+	if (action_flag == true)
+	{
+		FR* result = NULL;
+		switch (choice)
+		{
+		case 1:
+		{
+			if (polynom1 == NULL && polynom2 == NULL)
+			{
+				polynom1 = input_P(1);
+				polynom2 = input_P(2);
+				menu_P(choice, 0);
+				cout << "Polynom 1: ";
+				num_output_P(polynom1, 1);
+				cout << "Polynom 2: ";
+				num_output_P(polynom2, 0);
+			}
+			break;
+		}
+		case 2:
+		{
+			result = ADD_PP_P(polynom1, polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 3:
+		{
+			result = SUB_PP_P(polynom1, polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 4:
+		{
+			result = MUL_PP_P(polynom1, polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 5:
+		{
+			result = DIV_PP_P(polynom1, polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 6:
+		{
+			result = MOD_PP_P(polynom1, polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 7:
+		{
+			result = GCF_PP_P(polynom1, polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 8:
+		{
+			cout << "Result 1: ";
+			result = DER_P_P(polynom1);
+			num_output_P(result, 1);
+			delete_P(result);
+			cout << "Result 2: ";
+			result = DER_P_P(polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 9:
+		{
+			cout << "Result 1: ";
+			result = NMR_P_P(polynom1);
+			num_output_P(result, 1);
+			delete_P(result);
+			cout << "Result 2: ";
+			result = NMR_P_P(polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		}
+		delete_P(result);
+	}
+}
+
+//выбор действия в меню
+void arrow_position(int menu_size, int module_)
+{
+	bool input_flag = true;
+	int arrow;
+	int choice = 1;
+	while (true)
+	{
+		if (choice != 1)
+		{
+			switch (module_)
+			{
+			case 1: {menu_N(choice, 1); break;}
+			case 2: {menu_Z(choice, 1); break;}
+			case 3: {menu_Q(choice, 1); break;}
+			case 4: {menu_P(choice, 1); break;}
+			}
+		}
+		if (choice == 1)
+		{
+			if (input_flag == true)
+			{
+				switch (module_)
+				{
+				case 1: {menu_N(choice, 1); break;}
+				case 2: {menu_Z(choice, 1); break;}
+				case 3: {menu_Q(choice, 1); break;}
+				case 4: {menu_P(choice, 1); break;}
+				}
+			}
+			else
+			{
+				switch (module_)
+				{
+				case 1:
+				{
+					menu_N(choice, 0);
+					cout << "Number 1: ";
+					num_output(number1, 0, 0, 1);
+					cout << "Number 2: ";
+					num_output(number2, 0, 0, 1);
+					cout << "Press enter to input new numbers";
+					break;
+				}
+				case 2:
+				{
+					menu_Z(choice, 0);
+					cout << "Number 1: ";
+					num_output(number1, 1, 0, 1);
+					cout << "Number 2: ";
+					num_output(number2, 1, 0, 1);
+					cout << "Press enter to input new numbers";
+					break;
+				}
+				
+				case 3:
+				{
+					menu_Q(choice, 0);
+					cout << "Fraction 1: ";
+					num_output_Q(fraction1, 1);
+					cout << "Fraction 2: ";
+					num_output_Q(fraction2, 1);
+					cout << "Press enter to input new fractions";
+					break;
+				}
+				case 4:
+				{
+					menu_P(choice, 0);
+					cout << "Polynom 1: ";
+					num_output_P(polynom1, 1);
+					cout << "Polynom 2: ";
+					num_output_P(polynom2, 1);
+					cout << "Press enter to input new polynoms";
+					break;
+				}
+				}
+			}
+		}
+		arrow = _getch();
+		if (arrow == 224) arrow = _getch();
+		switch (arrow)
+		{
+		case _up:
+		{
+			choice--;
+			if (choice == 0) choice = menu_size;
+			break;
+		}
+		case _down:
+		{
+			choice++;
+			if (choice == menu_size + 1) choice = 1;
+			break;
+		}
+		case _enter:
+		{
+			if (choice == 1 || choice == menu_size)
+			{
+				switch (module_)
+				{
+				case 1:
+				{
+					delete[] number1;
+					number1 = NULL;
+					delete[] number2;
+					number2 = NULL;
+					if (choice == menu_size) return;
+					menu_N(choice, 1);
+					break;
+				}
+				case 2:
+				{
+					delete[] number1;
+					number1 = NULL;
+					delete[] number2;
+					number2 = NULL;
+					if (choice == menu_size) return;
+					menu_Z(choice, 1);
+					break;
+				}
+				case 3:
+				{
+					delete[] fraction1;
+					fraction1 = NULL;
+					delete[] fraction2;
+					fraction2 = NULL;
+					if (choice == menu_size) return;
+					menu_Q(choice, 1);
+					break;
+				}	
+				case 4:
+				{
+					FR* stack = NULL;
+					do
+					{
+						stack = polynom1;
+						if (polynom1->next != NULL) polynom1 = polynom1->next;
+						delete[] stack->numerator;
+						delete[] stack->denominator;
+						delete[] stack->degree;
+						delete stack;
+						stack = NULL;
+					} while (polynom1->next != NULL);
+					do
+					{
+						stack = polynom2;
+						if (polynom2->next != NULL) polynom2 = polynom2->next;
+						delete[] stack->numerator;
+						delete[] stack->denominator;
+						delete[] stack->degree;
+						delete stack;
+						stack = NULL;
+					} while (polynom2->next != NULL);
+					menu_P(choice, 1);
+					break;
+				}	
+				}
+			}
+		}
+		}
+		input_flag = false;
+	}
+}
+void module_arrow_position(int menu_size)
+{
+	int arrow;
+	int choice = 1;
+	while (true)
+	{
+		module_menu(choice);
+		arrow = _getch();
+		if (arrow == 224) arrow = _getch();
+		switch (arrow)
+		{
+		case _up:
+		{
+			choice--;
+			if (choice == 0) choice = menu_size;
+			break;
+		}
+		case _down:
+		{
+			choice++;
+			if (choice == menu_size + 1) choice = 1;
+			break;
+		}
+		case _enter:
+		{
+			switch (choice)
+			{
+			case 1: {arrow_position(menusize_N, 1); break;}
+			case 2: {arrow_position(menusize_Z, 2); break;}
+			case 3: {arrow_position(menusize_Q, 3); break;}
+			case 4: {arrow_position(menusize_P, 4); break;}
+			case 5: {return;}
+			}
+
+		}
+		}
+	}
+}
+
+int main()
+{
+	module_arrow_position(module_menusize);
+}
