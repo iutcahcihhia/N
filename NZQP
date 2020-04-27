@@ -2019,9 +2019,8 @@ FR* DER_P_P(FR* polynom)
 	decrement = NULL;
 	pol_head = sort_P(pol_head);
 	return pol_head;
-}
+} 
 
-//разложение на свободные от квадратов множители(немного не понял что здесь сделать надо)
 FR* NMR_P_P(FR* polynom)
 {
 	FR* der = DER_P_P(polynom);
