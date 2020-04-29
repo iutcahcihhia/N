@@ -108,6 +108,12 @@ void instruction()
 	cout << "Module Z. You can input new numbers in the Input numbers" << endl;
 	cout << "Module Q. You can input new fractions in the Input fractions" << endl;
 	cout << "Module P. You should input koefficients and degrees of monomials. Press enter after every input." << endl;
+	cout << "For example:" << endl;
+	cout << "Koefficient 1: 3/2   Degree 1: 3" << endl;
+	cout << "Koefficient 1: -4/5   Degree 1: 2" << endl;
+	cout << "Koefficient 1: 3     Degree 1: 1" << endl;
+	cout << "Koefficient 1: 8/10   Degree 1: 0" << endl;
+	cout << "is (3/2)*x^3(4/5)*x^2+3*x+(4/5)" << endl;
 	cout << "Then you input koefficient and degree of current monomial you have to choose: exit from input or continue" << endl;
 	cout << "To continue press enter, to exit press esc" << endl;
 	cout << endl << "Press esc to exit from instruction";
