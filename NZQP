@@ -83,6 +83,7 @@ string P_menu[] =
 	"MOD division",
 	"GCD",
 	"Derivative",
+	"NMR",
 	"Exit"
 };
 
@@ -1573,6 +1574,7 @@ FR* DIV_QQ_Q(FR* operand1, FR* operand2)
 			result->numerator[0] = 0;
 			result->denominator[0] = 0;
 		}
+		else
 		if (POZ_Z_D(result->numerator) == 2)
 		{
 			result->numerator[0] = 1;
@@ -1657,6 +1659,27 @@ FR* MUL_PQ_P(FR* polynom, FR* fraction)
 	}
 	pol_head = sort_P(pol_head); //упрощаем многочлен
 	return pol_head;
+}
+
+//деление многочлена на рациональное число
+FR* DIV_PQ_P(FR* polynom, FR* fraction)
+{
+	int len;
+	FR* stack = new FR;
+	len = len_search(fraction->numerator, 1);
+	stack->denominator = new int[len + 1];
+	for (int i = 0; i < len + 1; i++) stack->denominator[i] = fraction->numerator[i];
+	len = len_search(fraction->denominator, 1);
+	stack->numerator = new int[len + 1];
+	for (int i = 0; i < len + 1; i++) stack->numerator[i] = fraction->denominator[i];
+
+	FR* new_polynom = MUL_PQ_P(polynom, stack);
+
+	delete[] stack->numerator;
+	delete[] stack->denominator;
+	delete stack;
+	
+	return new_polynom;
 }
 
 //умножение многочлена на x^k
@@ -1857,6 +1880,31 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 	delete[] pol2_deg;
 	pol1_deg = NULL;
 	pol2_deg = NULL;
+
+	FR* mul_stack = MUL_PP_P(pol_head, polynom2);
+	FR* sub_stack = SUB_PP_P(polynom1, mul_stack);
+	delete_P(mul_stack);
+	if (sub_stack != NULL)
+	{
+		if (sub_stack->numerator[0] == 1)
+		{
+			stack = pol_head;
+			if (stack != new_polynom)
+			{
+				while (stack->next != new_polynom) stack = stack->next;
+				delete_P(new_polynom);
+				stack->next = NULL;
+			}
+			else
+			{
+				delete_P(stack);
+				stack = NULL;
+				pol_head = NULL;
+			}
+		}
+		delete_P(sub_stack);
+	}
+
 	return pol_head;
 }
 
@@ -1864,13 +1912,21 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 FR* MOD_PP_P(FR* polynom1, FR* polynom2)
 {
 	FR* div_stack = DIV_PP_P(polynom1, polynom2); //находим частное от деления многочленов
-	FR* mul_stack = MUL_PP_P(polynom2, div_stack); //умножаем частное на второй многочлен
-	FR* stack1 = copy_P(polynom1);
-	FR* new_polynom = SUB_PP_P(stack1, mul_stack); //вычитаем из первого многочлена то что получили ранее, получаем остаток
-	delete_P(div_stack);
-	delete_P(mul_stack);
-	delete_P(stack1);
-	return new_polynom;
+	if (div_stack != NULL)
+	{
+		FR* mul_stack = MUL_PP_P(polynom2, div_stack); //умножаем частное на второй многочлен
+		FR* stack1 = copy_P(polynom1);
+		FR* new_polynom = SUB_PP_P(stack1, mul_stack); //вычитаем из первого многочлена то что получили ранее, получаем остаток
+		delete_P(div_stack);
+		delete_P(mul_stack);
+		delete_P(stack1);
+		return new_polynom;
+	}
+	else
+	{
+		FR* stack = copy_P(polynom1);
+		return stack;
+	}
 }
 
 //НОД многочленов
@@ -1904,25 +1960,74 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 			}
 			pol1_deg = DEG_P_N(stack1);
 			pol2_deg = DEG_P_N(stack2);
-			if (COM_NN_D(pol1_deg, pol2_deg) != 1) stack = MOD_PP_P(stack1, stack2); //остаток от деления многочлена большей степени на многочлен меньшей 
-			else stack = MOD_PP_P(stack2, stack1);
-			if (COM_NN_D(pol1_deg, pol2_deg) != 1) //на место большего многочлена пишем полученный остаток
+			if (COM_NN_D(pol1_deg, pol2_deg) == 2) stack = MOD_PP_P(stack1, stack2); //остаток от деления многочлена большей степени на многочлен меньшей 
+			if (COM_NN_D(pol1_deg, pol2_deg) == 1) stack = MOD_PP_P(stack2, stack1);
+			if (COM_NN_D(pol1_deg, pol2_deg) == 0)
+			{
+				FR* tmp = SUB_PP_P(stack1, stack2);
+				if (tmp != NULL)
+				{
+					if (tmp->numerator[0] == 1) stack = MOD_PP_P(stack2, stack1);
+					else stack = MOD_PP_P(stack1, stack2);
+					delete_P(tmp);
+					tmp = NULL;
+				}
+				else stack = MOD_PP_P(stack1, stack2);
+			}
+			if (COM_NN_D(pol1_deg, pol2_deg) == 2) //на место большего многочлена пишем полученный остаток
 			{
 				delete_P(stack1);
 				delete[] pol1_deg;
 				pol1_deg = NULL;
 				stack1 = copy_P(stack);
 				pol1_deg = DEG_P_N(stack1);
+				delete_P(stack);
+				continue;
 			}
-			else
+			if (COM_NN_D(pol1_deg, pol2_deg) == 1)
 			{
 				delete_P(stack2);
 				delete[] pol2_deg;
 				pol2_deg = NULL;
 				stack2 = copy_P(stack);
 				pol2_deg = DEG_P_N(stack2);
+				delete_P(stack);
+				continue;
 			}
-			delete_P(stack);
+			if (COM_NN_D(pol1_deg, pol2_deg) == 0)
+			{
+				FR* tmp = SUB_PP_P(stack1, stack2);
+				if (tmp != NULL)
+				{
+					if (tmp->numerator[0] == 1)
+					{
+						delete_P(stack2);
+						delete[] pol2_deg;
+						pol2_deg = NULL;
+						stack2 = copy_P(stack);
+						pol2_deg = DEG_P_N(stack2);
+						delete_P(stack);
+					}
+					else
+					{
+						delete_P(stack1);
+						delete[] pol1_deg;
+						pol1_deg = NULL;
+						stack1 = copy_P(stack);
+						pol1_deg = DEG_P_N(stack1);
+						delete_P(stack);
+					}
+				}
+				else
+				{
+					delete_P(stack1);
+					delete[] pol1_deg;
+					pol1_deg = NULL;
+					stack1 = copy_P(stack);
+					pol1_deg = DEG_P_N(stack1);
+					delete_P(stack);
+				}
+			}
 		}
 	}
 	else return NULL;
@@ -1972,6 +2077,28 @@ FR* DER_P_P(FR* polynom)
 	decrement = NULL;
 	pol_head = sort_P(pol_head);
 	return pol_head;
+}
+
+//кратные корни в простые
+FR* NMR_P_P(FR* polynom)
+{
+	int len;
+	FR* stack1 = DER_P_P(polynom);
+	FR* stack2 = GCF_PP_P(polynom, stack1);
+	delete_P(stack1);
+	FR* koef = FAC_P_Q(stack2);
+
+	stack1 = DIV_PQ_P(stack2, koef);
+	delete_P(stack2);
+
+	delete[] koef->numerator;
+	delete[] koef->denominator;
+	delete koef;
+
+	FR* result = DIV_PP_P(polynom, stack1);
+	delete_P(stack1);
+
+	return result;
 }
 
 
@@ -2290,7 +2417,7 @@ FR* input_P(int n)
 		if (first_flag == false)
 		{
 			polynom = input_Q(n, counter, 1); 
-			polynom->degree = input_N(0, counter);
+			polynom->degree = input_N(n, counter);
 			pol_head = polynom;
 			first_flag = true;
 		}
@@ -2298,7 +2425,7 @@ FR* input_P(int n)
 		{
 			polynom->next = input_Q(n, counter, 1);
 			polynom = polynom->next;
-			polynom->degree = input_N(0, counter);
+			polynom->degree = input_N(n, counter);
 		}
 		polynom->next = NULL;
 		polynom = pol_head;
@@ -2631,7 +2758,7 @@ void menu_P(int choice, bool action_flag)
 		num_output_P(polynom1, 1);
 		cout << "Polynom 2: ";
 		num_output_P(polynom2, 1);
-		if (choice != menusize_P && choice != 8) cout << "Result: ";
+		if (choice != menusize_P && choice != 8 && choice != 9) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
@@ -2696,6 +2823,17 @@ void menu_P(int choice, bool action_flag)
 			delete_P(result);
 			cout << "Result 2: ";
 			result = DER_P_P(polynom2);
+			num_output_P(result, 1);
+			break;
+		}
+		case 9:
+		{
+			cout << "Result 1: ";
+			result = NMR_P_P(polynom1);
+			num_output_P(result, 1);
+			delete_P(result);
+			cout << "Result 2: ";
+			result = NMR_P_P(polynom2);
 			num_output_P(result, 1);
 			break;
 		}
