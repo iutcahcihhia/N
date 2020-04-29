@@ -31,6 +31,7 @@ int menuwide = 30;
 
 string menu_module[] =
 {
+	"Instruction",
 	"N module",
 	"Z module",
 	"Q module",
@@ -82,7 +83,6 @@ string P_menu[] =
 	"MOD division",
 	"GCD",
 	"Derivative",
-	"NMR",
 	"Exit"
 };
 
@@ -100,6 +100,21 @@ enum keys
 int COM_NN_D(int* number1, int* number2);
 FR* ADD_QQ_Q(FR* fraction1, FR* fraction2);
 FR* RED_Q_Q(FR* fraction);
+
+void instruction()
+{
+	cout << "In every module you should input 2 operands of current type to continue" << endl;
+	cout << "Module N. You can input new numbers in the Input numbers" << endl;
+	cout << "Module Z. You can input new numbers in the Input numbers" << endl;
+	cout << "Module Q. You can input new fractions in the Input fractions" << endl;
+	cout << "Module P. You should input koefficients and degrees of monomials. Press enter after every input." << endl;
+	cout << "Then you input koefficient and degree of current monomial you have to choose: exit from input or continue" << endl;
+	cout << "To continue press enter, to exit press esc" << endl;
+	cout << endl << "Press esc to exit from instruction";
+	char sym = '\0';
+	while (sym != _esc) sym = _getch();
+	return;
+}
 
 //определение длины числа
 int len_search(int* number, bool Z_flag)
@@ -249,28 +264,6 @@ void num_output_P(FR* polynom, bool endl_flag)
 	st1 = NULL;
 }
 
-//перевёрнутая дробь
-FR* inverted_Q(FR* fraction)
-{
-	FR* result = new FR;
-	int len;
-
-	len = len_search(fraction->numerator, 1);
-	result->denominator = new int[len + 1];
-	for (int i = 0; i < len + 1; i++) result->denominator[i] = fraction->numerator[i];
-
-	len = len_search(fraction->denominator, 1);
-	result->numerator = new int[len + 1];
-	for (int i = 0; i < len + 1; i++) result->numerator[i] = fraction->denominator[i];
-
-	if (fraction->numerator[0] == 1)
-	{
-		result->numerator[0] = 1;
-		result->denominator[0] = 0;
-	}
-	return result;
-}
-
 //удаление многочлена из памяти
 void delete_P(FR* polynom)
 {
@@ -284,6 +277,7 @@ void delete_P(FR* polynom)
 		delete[] prev->numerator;
 		delete[] prev->denominator;
 		delete prev;
+		prev = NULL;
 	}
 }
 
@@ -1590,89 +1584,42 @@ FR* DIV_QQ_Q(FR* operand1, FR* operand2)
 //сложение многочленов
 FR* ADD_PP_P(FR* polynom1, FR* polynom2)
 {
-	FR* stack = polynom1;
+	FR* stack = NULL;
 	FR* new_polynom = NULL;
 	FR* pol_head = NULL;
-	bool flag = false;
-	int len;
-	while (stack != NULL)
-	{
-		if (pol_head == NULL)
-		{
-			new_polynom = new FR;
-			new_polynom->next = NULL;
-			pol_head = new_polynom;
-		}
-		else
-		{
-			new_polynom->next = new FR;
-			new_polynom = new_polynom->next;
-			new_polynom->next = NULL;
-		}
-		len = len_search(stack->degree, 0);
-		new_polynom->degree = new int[len];
-		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
-		len = len_search(stack->numerator, 1);
-		new_polynom->numerator = new int[len + 1];
-		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
-		len = len_search(stack->denominator, 1);
-		new_polynom->denominator = new int[len + 1];
-		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
-		stack = stack->next;
-		if (stack == NULL && flag == false)
-		{
-			stack = polynom2;
-			flag = true;
-		}
-	}
-	pol_head = sort_P(pol_head);
+
+	new_polynom = copy_P(polynom1); //записываем первый многочлен в новый список
+	pol_head = new_polynom;
+	stack = copy_P(polynom2);
+	while (new_polynom->next != NULL) new_polynom = new_polynom->next;
+	new_polynom->next = stack; //присоединяем к нему второй с конца
+	pol_head = sort_P(pol_head); //сжимаем полученный многочлен 
+
 	return pol_head;
 }
 
 //вычитание многочленов
 FR* SUB_PP_P(FR* polynom1, FR* polynom2)
 {
-	FR* stack = polynom1;
+	FR* stack = NULL;
 	FR* new_polynom = NULL;
 	FR* pol_head = NULL;
-	bool flag = false;
-	int len;
-	while (stack != NULL)
+	
+	new_polynom = copy_P(polynom1); //записываем первый многочлен в новый список
+	stack = copy_P(polynom2);
+	pol_head = stack;
+	while (stack != NULL) //во втором многочлене меняем знаки числителей коэффициентов на противоположные
 	{
-		if (pol_head == NULL)
-		{
-			new_polynom = new FR;
-			new_polynom->next = NULL;
-			pol_head = new_polynom;
-		}
-		else
-		{
-			new_polynom->next = new FR;
-			new_polynom = new_polynom->next;
-			new_polynom->next = NULL;
-		}
-		len = len_search(stack->degree, 0);
-		new_polynom->degree = new int[len];
-		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
-		len = len_search(stack->numerator, 1);
-		new_polynom->numerator = new int[len + 1];
-		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
-		if (flag == true)
-		{
-			if (new_polynom->numerator[0] == 0) new_polynom->numerator[0] = 1;
-			else new_polynom->numerator[0] = 0;
-		}
-		len = len_search(stack->denominator, 1);
-		new_polynom->denominator = new int[len + 1];
-		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
+		if (stack->numerator[0] == 0) stack->numerator[0] = 1;
+		else stack->numerator[0] = 0;
 		stack = stack->next;
-		if (stack == NULL && flag == false)
-		{
-			stack = polynom2;
-			flag = true;
-		}
 	}
-	pol_head = sort_P(pol_head);
+	stack = pol_head;
+	pol_head = new_polynom;
+	while (new_polynom->next != NULL) new_polynom = new_polynom->next;
+	new_polynom->next = stack; //присоединяем второй многочлен к первому
+	pol_head = sort_P(pol_head); //сжимаем полученный многочлен
+
 	return pol_head;
 }
 
@@ -1685,7 +1632,7 @@ FR* MUL_PQ_P(FR* polynom, FR* fraction)
 	int len;
 	while (stack != NULL)
 	{
-		if (pol_head == NULL)
+		if (pol_head == NULL) //заполняем список новым многочленом, умножая его коэффициенты на входной
 		{
 			new_polynom = MUL_QQ_Q(stack, fraction);
 			pol_head = new_polynom;
@@ -1697,12 +1644,12 @@ FR* MUL_PQ_P(FR* polynom, FR* fraction)
 			new_polynom = new_polynom->next;
 			new_polynom->next = NULL;
 		}
-		len = len_search(stack->degree, 0);
+		len = len_search(stack->degree, 0); //переписываем степень
 		new_polynom->degree = new int[len];
 		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
 		stack = stack->next;
 	}
-	pol_head = sort_P(pol_head);
+	pol_head = sort_P(pol_head); //упрощаем многочлен
 	return pol_head;
 }
 
@@ -1715,7 +1662,7 @@ FR* MUL_Pxk_P(FR* polynom, int* k)
 	int len;
 	while (stack != NULL)
 	{
-		if (pol_head == NULL)
+		if (pol_head == NULL) //заполняем список новым многочленом
 		{
 			new_polynom = new FR;
 			new_polynom->next = NULL;
@@ -1727,13 +1674,13 @@ FR* MUL_Pxk_P(FR* polynom, int* k)
 			new_polynom = new_polynom->next;
 			new_polynom->next = NULL;
 		}
-		new_polynom->degree = ADD_NN_N(stack->degree, k);
+		new_polynom->degree = ADD_NN_N(stack->degree, k); //степень каждого одночлена увеличиваем на k
 		len = len_search(stack->numerator, 1);
 		new_polynom->numerator = new int[len + 1];
 		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
 		len = len_search(stack->denominator, 1);
 		new_polynom->denominator = new int[len + 1];
-		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
+		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i]; //переписываем числитель и знаменатель одночлена
 		stack = stack->next;
 	}
 	pol_head = sort_P(pol_head);
@@ -1743,7 +1690,7 @@ FR* MUL_Pxk_P(FR* polynom, int* k)
 //старший коэффициент многочлена
 FR* LED_P_Q(FR* polynom)
 {
-	FR* stack = polynom;
+	FR* stack = polynom; //ввод и функции устроены так, что многочлен располагается от старшей степени к младшей, поэтому достаточно вернуть коэффициент первого одночлена
 	FR* result = new FR;
 	int len;
 	len = len_search(stack->numerator, 1);
@@ -1758,7 +1705,7 @@ FR* LED_P_Q(FR* polynom)
 //степень многочлена
 int* DEG_P_N(FR* polynom)
 {
-	FR* stack = polynom;
+	FR* stack = polynom; //ввод и функции устроены так, что многочлен располагается от старшей степени к младшей, поэтому достаточно вернуть степень первого одночлена
 	int* result = NULL;
 	if (stack != NULL)
 	{
@@ -1782,10 +1729,10 @@ FR* FAC_P_Q(FR* polynom)
 	int len = 0;
 	gcd[0] = 0;
 	lcm[0] = 1;
-	while (stack != NULL)
+	while (stack != NULL) //поиск нод числителей и нок знаменателей в цикле до конца многочлена
 	{
 		num = ABS_Z_N(stack->numerator);
-		num_stack = GCF_NN_N(gcd, num);
+		num_stack = GCF_NN_N(gcd, num); //нод полученного ранее нода и текущего числителя
 		delete[] num;
 		num = NULL;
 		delete[] gcd;
@@ -1797,7 +1744,7 @@ FR* FAC_P_Q(FR* polynom)
 		num_stack = NULL;
 		
 		num = ABS_Z_N(stack->denominator);
-		num_stack = LCM_NN_N(lcm, num);
+		num_stack = LCM_NN_N(lcm, num); //нок полученного ранее нока и текущего знаменателя
 		delete[] num;
 		num = NULL;
 		delete[] lcm;
@@ -1832,9 +1779,9 @@ FR* MUL_PP_P(FR* polynom1, FR* polynom2)
 		stack2 = polynom2;
 		while (stack2 != NULL)
 		{
-			koef = MUL_PQ_P(stack1, stack2);
+			koef = MUL_PQ_P(stack1, stack2); //в двойном цикле умножаем все одночлены первого многочлена на все одночлены второго, получаем неупрощённый большой многочлен
 			koef->next = NULL;
-			if (pol_head == NULL)
+			if (pol_head == NULL) //учёт степеней
 			{
 				new_polynom = MUL_Pxk_P(koef, stack2->degree);
 				pol_head = new_polynom;
@@ -1855,7 +1802,7 @@ FR* MUL_PP_P(FR* polynom1, FR* polynom2)
 		}
 		stack1 = stack1->next;
 	}
-	pol_head = sort_P(pol_head);
+	pol_head = sort_P(pol_head); //сворачиваем большой многочлен
 	return pol_head;
 }
 
@@ -1870,11 +1817,11 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 	int* pol1_deg = DEG_P_N(stack1);
 	int* pol2_deg = DEG_P_N(stack2);
 
-	while (COM_NN_D(pol1_deg, pol2_deg) != 1)
+	while (COM_NN_D(pol1_deg, pol2_deg) != 1) //пока числитель второго многочлена не станет больше
 	{
-		if (pol_head == NULL)
+		if (pol_head == NULL) //делим коэффициенты первых одночленов
 		{
-			new_polynom = DIV_QQ_Q(stack1, stack2);
+			new_polynom = DIV_QQ_Q(stack1, stack2); 
 			new_polynom->next = NULL;
 			pol_head = new_polynom;
 		}
@@ -1884,10 +1831,10 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 			new_polynom = new_polynom->next;
 			new_polynom->next = NULL;
 		}
-		new_polynom->degree = SUB_NN_N(pol1_deg, pol2_deg);
+		new_polynom->degree = SUB_NN_N(pol1_deg, pol2_deg); //степень первого многочлена при делении на второй у меньшается на степень второго
 		stack = MUL_PP_P(stack2, new_polynom);
 		delete_P(stack2);
-		stack2 = SUB_PP_P(stack1, stack);
+		stack2 = SUB_PP_P(stack1, stack); //вычитаем из первого многочлена второй, умноженный на вновь полученный одночлен
 		delete_P(stack1);
 		stack1 = copy_P(stack2);
 		delete_P(stack2);
@@ -1895,7 +1842,7 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 		stack2 = copy_P(polynom2);
 		delete[] pol1_deg;
 		pol1_deg = NULL;
-		if (stack1 != NULL) pol1_deg = DEG_P_N(stack1);
+		if (stack1 != NULL) pol1_deg = DEG_P_N(stack1); //переобозначаем степень первого многочлена
 		else break;
 	}
 	delete_P(stack1);
@@ -1910,10 +1857,10 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 //остаток от деления многочленов
 FR* MOD_PP_P(FR* polynom1, FR* polynom2)
 {
-	FR* div_stack = DIV_PP_P(polynom1, polynom2);
-	FR* mul_stack = MUL_PP_P(polynom2, div_stack);
+	FR* div_stack = DIV_PP_P(polynom1, polynom2); //находим частное от деления многочленов
+	FR* mul_stack = MUL_PP_P(polynom2, div_stack); //умножаем частное на второй многочлен
 	FR* stack1 = copy_P(polynom1);
-	FR* new_polynom = SUB_PP_P(stack1, mul_stack);
+	FR* new_polynom = SUB_PP_P(stack1, mul_stack); //вычитаем из первого многочлена то что получили ранее, получаем остаток
 	delete_P(div_stack);
 	delete_P(mul_stack);
 	delete_P(stack1);
@@ -1929,7 +1876,7 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 	int* pol1_deg = NULL;
 	int* pol2_deg = NULL;
 	
-	if (stack1 != NULL || stack2 != NULL)
+	if (stack1 != NULL || stack2 != NULL) //пока один из многочленов не станет 0
 	{
 		while (true)
 		{
@@ -1951,9 +1898,9 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 			}
 			pol1_deg = DEG_P_N(stack1);
 			pol2_deg = DEG_P_N(stack2);
-			if (COM_NN_D(pol1_deg, pol2_deg) != 1) stack = MOD_PP_P(stack1, stack2);
+			if (COM_NN_D(pol1_deg, pol2_deg) != 1) stack = MOD_PP_P(stack1, stack2); //остаток от деления многочлена большей степени на многочлен меньшей 
 			else stack = MOD_PP_P(stack2, stack1);
-			if (COM_NN_D(pol1_deg, pol2_deg) != 1)
+			if (COM_NN_D(pol1_deg, pol2_deg) != 1) //на место большего многочлена пишем полученный остаток
 			{
 				delete_P(stack1);
 				delete[] pol1_deg;
@@ -1988,7 +1935,7 @@ FR* DER_P_P(FR* polynom)
 
 	while (stack != NULL)
 	{
-		int* z_deg = TRANS_N_Z(stack->degree);
+		int* z_deg = TRANS_N_Z(stack->degree); //чтобы найти производную умножаем каждый коэффициент на степень и уменьшаем степень на 1
 		koef = TRANS_Z_Q(z_deg);
 		delete[] z_deg;
 		z_deg = NULL;
@@ -2008,7 +1955,7 @@ FR* DER_P_P(FR* polynom)
 		delete[] koef->denominator;
 		delete koef;
 		if (new_polynom->numerator[1] != 0)	new_polynom->degree = SUB_NN_N(stack->degree, decrement);
-		else
+		else //если степень была 0 то коэффициент при одночлене, стал 0, а степень можно не менять
 		{
 			new_polynom->degree = new int[1];
 			new_polynom->degree[0] = 0;
@@ -2019,17 +1966,8 @@ FR* DER_P_P(FR* polynom)
 	decrement = NULL;
 	pol_head = sort_P(pol_head);
 	return pol_head;
-} 
-
-FR* NMR_P_P(FR* polynom)
-{
-	FR* der = DER_P_P(polynom);
-	FR* stack = GCF_PP_P(polynom, der);
-	delete_P(der);
-	FR* result = DIV_PP_P(polynom, stack);
-	delete_P(stack);
-	return result;
 }
+
 
 
 //ввод
@@ -2341,11 +2279,11 @@ FR* input_P(int n)
 	char num;
 	int k = 0;
 	bool first_flag = false;
-	while (true)
+	while (true) //ввод коэффициентов и степеней многочленов
 	{	
 		if (first_flag == false)
 		{
-			polynom = input_Q(n, counter, 1);
+			polynom = input_Q(n, counter, 1); 
 			polynom->degree = input_N(0, counter);
 			pol_head = polynom;
 			first_flag = true;
@@ -2367,7 +2305,11 @@ FR* input_P(int n)
 			num_output(polynom->degree, 0, 0, 1);
 			i++;
 			if (polynom->next != NULL) polynom = polynom->next;
-			else break;
+			else
+			{
+				cout << "Press enter to continue" << endl << "Press esc to save changes and exit from input";
+				break;
+			}
 		}
 		
 		num = _getch();
@@ -2751,17 +2693,6 @@ void menu_P(int choice, bool action_flag)
 			num_output_P(result, 1);
 			break;
 		}
-		case 9:
-		{
-			cout << "Result 1: ";
-			result = NMR_P_P(polynom1);
-			num_output_P(result, 1);
-			delete_P(result);
-			cout << "Result 2: ";
-			result = NMR_P_P(polynom2);
-			num_output_P(result, 1);
-			break;
-		}
 		}
 		delete_P(result);
 	}
@@ -2899,27 +2830,9 @@ void arrow_position(int menu_size, int module_)
 				}	
 				case 4:
 				{
-					FR* stack = NULL;
-					do
-					{
-						stack = polynom1;
-						if (polynom1->next != NULL) polynom1 = polynom1->next;
-						delete[] stack->numerator;
-						delete[] stack->denominator;
-						delete[] stack->degree;
-						delete stack;
-						stack = NULL;
-					} while (polynom1->next != NULL);
-					do
-					{
-						stack = polynom2;
-						if (polynom2->next != NULL) polynom2 = polynom2->next;
-						delete[] stack->numerator;
-						delete[] stack->denominator;
-						delete[] stack->degree;
-						delete stack;
-						stack = NULL;
-					} while (polynom2->next != NULL);
+					delete_P(polynom1);
+					delete_P(polynom2);
+					if (choice == menu_size) return;
 					menu_P(choice, 1);
 					break;
 				}	
@@ -2957,11 +2870,12 @@ void module_arrow_position(int menu_size)
 		{
 			switch (choice)
 			{
-			case 1: {arrow_position(menusize_N, 1); break;}
-			case 2: {arrow_position(menusize_Z, 2); break;}
-			case 3: {arrow_position(menusize_Q, 3); break;}
-			case 4: {arrow_position(menusize_P, 4); break;}
-			case 5: {return;}
+			case 1: {instruction(); break;}
+			case 2: {arrow_position(menusize_N, 1); break;}
+			case 3: {arrow_position(menusize_Z, 2); break;}
+			case 4: {arrow_position(menusize_Q, 3); break;}
+			case 5: {arrow_position(menusize_P, 4); break;}
+			case 6: {return;}
 			}
 
 		}
