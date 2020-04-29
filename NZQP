@@ -273,18 +273,18 @@ void num_output_P(FR* polynom, bool endl_flag)
 //удаление многочлена из памяти
 void delete_P(FR* polynom)
 {
-	FR* stack = polynom;
 	FR* prev = NULL;
-	while (stack != NULL)
+	while (polynom != NULL)
 	{
-		prev = stack;
-		stack = stack->next;
+		prev = polynom;
+		polynom = polynom->next;
 		delete[] prev->degree;
 		delete[] prev->numerator;
 		delete[] prev->denominator;
 		delete prev;
 		prev = NULL;
 	}
+	polynom = NULL;
 }
 
 //копирование многочлена
@@ -2837,7 +2837,9 @@ void arrow_position(int menu_size, int module_)
 				case 4:
 				{
 					delete_P(polynom1);
+					polynom1 = NULL;
 					delete_P(polynom2);
+					polynom2 = NULL;
 					if (choice == menu_size) return;
 					menu_P(choice, 1);
 					break;
@@ -2893,3 +2895,4 @@ int main()
 {
 	module_arrow_position(module_menusize);
 }
+
