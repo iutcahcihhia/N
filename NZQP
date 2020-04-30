@@ -42,6 +42,8 @@ string menu_module[] =
 string N_menu[] = 
 {
 	"Input numbers",
+	"Compare numbers",
+	"Increment",
 	"Addition",
 	"Subtraction",
 	"Multiplication",
@@ -55,6 +57,9 @@ string N_menu[] =
 string Z_menu[] =
 {
 	"Input numbers",
+	"Absolute value",
+	"Compare with zero",
+	"Opposite number",
 	"Addition",
 	"Subtraction",
 	"Multiplication",
@@ -66,6 +71,8 @@ string Z_menu[] =
 string Q_menu[] =
 {
 	"Input fractions",
+	"Reduction",
+	"Type test",
 	"Addition",
 	"Subtraction",
 	"Multiplication",
@@ -1851,8 +1858,8 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 		if (pol_head == NULL) //делим коэффициенты первых одночленов
 		{
 			new_polynom = DIV_QQ_Q(stack1, stack2); 
-			new_polynom->next = NULL;
 			pol_head = new_polynom;
+			new_polynom->next = NULL;
 		}
 		else
 		{
@@ -1873,6 +1880,7 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 		pol1_deg = NULL;
 		if (stack1 != NULL) pol1_deg = DEG_P_N(stack1); //переобозначаем степень первого многочлена
 		else break;
+		
 	}
 	delete_P(stack1);
 	delete_P(stack2);
@@ -2482,7 +2490,9 @@ void menu_N(int choice, bool action_flag)
 		string marker;
 		if (choice == i) marker = " >"; else marker = "  ";
 		char num = i + '0';
-		string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		string menuline;
+		if (i < 10)	menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		else menuline = (char)186 + marker + char(i / 10 + '0') + char(i % 10 + '0') + ". " + menutxt;
 		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
 		cout << menuline << endl;
 		i++;
@@ -2494,7 +2504,7 @@ void menu_N(int choice, bool action_flag)
 		num_output(number1, 0, 0, 1);
 		cout << "Number 2: ";
 		num_output(number2, 0, 0, 1);
-		cout << "Result: ";
+		if (choice != 3 && choice != menusize_N) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
@@ -2517,45 +2527,65 @@ void menu_N(int choice, bool action_flag)
 		}
 		case 2:
 		{
+			int res = COM_NN_D(number1, number2);
+			if (res == 1) cout << "Second number is larger.";
+			if (res == 2) cout << "First number is larger.";
+			if (res == 3) cout << "Numbers are equal.";
+			break;
+		}
+		case 3:
+		{
+			cout << "Result 1: ";
+			result = ADD_1N_N(number1);
+			num_output(result, 0, 0, 1);
+			delete[] result;
+			result = NULL;
+			cout << "Result 2: ";
+			result = ADD_1N_N(number2);
+			num_output(result, 0, 0, 1);
+			break;
+		}
+		case 4:
+		{
 			result = ADD_NN_N(number1, number2);
 			if (result != NULL) num_output(result, 0, 0, 1);
 			break;
 		}
-		case 3:
+		case 5:
 		{
 			result = SUB_NN_N(number1, number2);
 			if (result != NULL) num_output(result, 0, 0, 1);
 			else cout << "Error! Negative result.";
 			break;
 		}
-		case 4:
+		case 6:
 		{
 			result = MUL_NN_N(number1, number2);
 			if (result != NULL) num_output(result, 0, 0, 1);
 			break;
 		}
-		case 5:
+		case 7:
 		{
 			result = DIV_NN_N(number1, number2);
 			if (result != NULL) num_output(result, 0, 0, 1);
 			else cout << "Error! Second number is larger or division by zero.";
 			break;
 		}
-		case 6:
+		case 8:
 		{
 			result = MOD_NN_N(number1, number2);
 			if (result != NULL) num_output(result, 0, 0, 1);
 			else cout << "Error! Second number is larger or division by zero.";
 			break;
 		}
-		case 7:
+		case 9:
 		{
 			result = GCF_NN_N(number1, number2);
 			if (result != NULL) num_output(result, 0, 0, 1);
 			else cout << "Error! GCD(0,0).";
 			break;
 		}
-		case 8:
+		case 10:
 		{
 			result = LCM_NN_N(number1, number2);
 			if (result != NULL) num_output(result, 0, 0, 1);
@@ -2577,7 +2607,9 @@ void menu_Z(int choice, bool action_flag)
 		string marker;
 		if (choice == i) marker = " >"; else marker = "  ";
 		char num = i + '0';
-		string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		string menuline;
+		if (i < 10)	menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		else menuline = (char)186 + marker + char(i / 10 + '0') + char(i % 10 + '0') + ". " + menutxt;
 		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
 		cout << menuline << endl;
 		i++;
@@ -2589,7 +2621,7 @@ void menu_Z(int choice, bool action_flag)
 		num_output(number1, 1, 0, 1);
 		cout << "Number 2: ";
 		num_output(number2, 1, 0, 1);
-		if (choice != menusize_Z) cout << "Result: ";
+		if (choice != menusize_Z && choice != 2 && choice != 3 && choice != 4) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
@@ -2612,30 +2644,68 @@ void menu_Z(int choice, bool action_flag)
 		}
 		case 2:
 		{
+			cout << "Result 1: ";
+			result = ABS_Z_N(number1);
+			num_output(result, 0, 0, 1);
+			delete[] result;
+			result = NULL;
+			cout << "Result 2: ";
+			result = ABS_Z_N(number2);
+			num_output(result, 0, 0, 1);
+			break;
+		}
+		case 3:
+		{
+			int res = POZ_Z_D(number1);
+			cout << "Result 1: ";
+			if (res == 1) cout << "Negative" << endl;
+			if (res == 2) cout << "Positive" << endl;
+			if (res == 0) cout << "Zero" << endl;
+		    cout << "Result 2: ";
+			res = POZ_Z_D(number2);
+			if (res == 1) cout << "Negative" << endl;
+			if (res == 2) cout << "Positive" << endl;
+			if (res == 0) cout << "Zero" << endl;
+			break;
+		}
+		case 4:
+		{
+			cout << "Result 1: ";
+			result = MUL_ZM_Z(number1);
+			num_output(result, 1, 0, 1);
+			delete[] result;
+			result = NULL;
+			cout << "Result 2: ";
+			result = MUL_ZM_Z(number2);
+			num_output(result, 1, 0, 1);
+			break;
+		}
+		case 5:
+		{
 			result = ADD_ZZ_Z(number1, number2);
 			if (result != NULL) num_output(result, 1, 0, 1);
 			break;
 		}
-		case 3:
+		case 6:
 		{
 			result = SUB_ZZ_Z(number1, number2);
 			if (result != NULL) num_output(result, 1, 0, 1);
 			break;
 		}
-		case 4:
+		case 7:
 		{
 			result = MUL_ZZ_Z(number1, number2);
 			if (result != NULL) num_output(result, 1, 0, 1);
 			break;
 		}
-		case 5:
+		case 8:
 		{
 			result = DIV_ZZ_Z(number1, number2);
 			if (result != NULL) num_output(result, 1, 0, 1);
 			else cout << "Error! Second number is larger or negative or division by zero.";
 			break;
 		}
-		case 6:
+		case 9:
 		{
 			result = MOD_ZZ_Z(number1, number2);
 			if (result != NULL) num_output(result, 1, 0, 1);
@@ -2657,7 +2727,9 @@ void menu_Q(int choice, bool action_flag)
 		string marker;
 		if (choice == i) marker = " >"; else marker = "  ";
 		char num = i + '0';
-		string menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		string menuline;
+		if (i < 10)	menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		else menuline = (char)186 + marker + char(i / 10 + '0') + char(i % 10 + '0') + ". " + menutxt;
 		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
 		cout << menuline << endl;
 		i++;
@@ -2669,7 +2741,7 @@ void menu_Q(int choice, bool action_flag)
 		num_output_Q(fraction1, 1);
 		cout << "Fraction 2: ";
 		num_output_Q(fraction2, 1);
-		if (choice != menusize_Z) cout << "Result: ";
+		if (choice != menusize_Z && choice != 2 && choice != 3) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
@@ -2693,13 +2765,39 @@ void menu_Q(int choice, bool action_flag)
 		}
 		case 2:
 		{
+			cout << "Result 1: ";
+			result = RED_Q_Q(fraction1);
+			num_output_Q(result, 1);
+			delete[] result->denominator;
+			delete[] result->numerator;
+			delete result;
+			result = NULL;
+			cout << "Result 2: ";
+			result = RED_Q_Q(fraction2);
+			num_output_Q(result, 1);
+			break;
+		}
+		case 3:
+		{
+			int res = INT_Q_B(fraction1);
+			cout << "Result 1: ";
+			if (res == 1) cout << "Integer" << endl;
+			if (res == 0) cout << "Rational" << endl;
+			cout << "Result 2: ";
+			res = INT_Q_B(fraction2);
+			if (res == 1) cout << "Integer" << endl;
+			if (res == 0) cout << "Rational" << endl;
+			break;
+		}
+		case 4:
+		{
 			result = ADD_QQ_Q(fraction1, fraction2);
 			trans_result = TRANS_Q_Z(result);
 			if (result != NULL && trans_result == NULL) num_output_Q(result, 1);
 			else num_output(trans_result, 1, 0, 1);
 			break;
 		}
-		case 3:
+		case 5:
 		{
 			result = SUB_QQ_Q(fraction1, fraction2);
 			trans_result = TRANS_Q_Z(result);
@@ -2707,7 +2805,7 @@ void menu_Q(int choice, bool action_flag)
 			else num_output(trans_result, 1, 0, 1);
 			break;
 		}
-		case 4:
+		case 6:
 		{
 			result = MUL_QQ_Q(fraction1, fraction2);
 			trans_result = TRANS_Q_Z(result);
@@ -2715,7 +2813,7 @@ void menu_Q(int choice, bool action_flag)
 			else num_output(trans_result, 1, 0, 1);
 			break;
 		}
-		case 5:
+		case 7:
 		{
 			result = DIV_QQ_Q(fraction1, fraction2);
 			if (result != NULL) trans_result = TRANS_Q_Z(result);
@@ -2730,8 +2828,13 @@ void menu_Q(int choice, bool action_flag)
 		}
 		}
 		delete[] trans_result;
-		delete result;
-		result = NULL;
+		if (result != NULL)
+		{
+			delete[] result->denominator;
+			delete[] result->numerator;
+			delete result;
+			result = NULL;
+		}
 	}
 }
 void menu_P(int choice, bool action_flag)
@@ -2746,7 +2849,7 @@ void menu_P(int choice, bool action_flag)
 		char num = i + '0';
 		string menuline;
 		if (i < 10)	menuline = (char)186 + marker + " " + num + ". " + menutxt;
-		else menuline = (char)186 + marker + "10. " + menutxt;
+		else menuline = (char)186 + marker + char(i / 10 + '0') + char(i % 10 + '0') + ". " + menutxt;
 		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
 		cout << menuline << endl;
 		i++;
