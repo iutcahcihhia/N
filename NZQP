@@ -295,6 +295,14 @@ void delete_P(FR* polynom)
 	polynom = NULL;
 }
 
+void delete_Q(FR* fraction)
+{
+	delete[] fraction->numerator;
+	delete[] fraction->denominator;
+	delete fraction;
+	fraction = NULL;
+}
+
 //копирование многочлена
 FR* copy_P(FR* polynom)
 {
@@ -1358,8 +1366,6 @@ FR* RED_Q_Q(FR* fraction)
 		result->numerator[0] = 0;
 		result->numerator[1] = 0;
 		result->numerator[2] = -1;
-		delete[] result->denominator; 
-		result->denominator = 0;
 		result->denominator = new int[3];
 		result->denominator[0] = 0;
 		result->denominator[1] = 1;
@@ -1488,6 +1494,7 @@ FR* ADD_QQ_Q(FR* operand1, FR* operand2)
 	delete[] stack->numerator;
 	delete[] stack->denominator;
 	delete stack;
+	stack = NULL;
 	
 	return result;
 }
@@ -1535,6 +1542,7 @@ FR* SUB_QQ_Q(FR* operand1, FR* operand2)
 	delete[] stack->numerator;
 	delete[] stack->denominator;
 	delete stack;
+	stack = NULL;
 
 	return result;
 }
@@ -1553,6 +1561,7 @@ FR* MUL_QQ_Q(FR* operand1, FR* operand2)
 	delete[] stack->denominator;
 	delete[] stack->numerator;
 	delete stack;
+	stack = NULL;
 
 	return result;
 }
@@ -1573,6 +1582,7 @@ FR* DIV_QQ_Q(FR* operand1, FR* operand2)
 	delete[] stack->denominator;
 	delete[] stack->numerator;
 	delete stack;
+	stack = NULL;
 
 	if (POZ_Z_D(result->denominator) == 1)
 	{
@@ -1889,29 +1899,7 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 	pol1_deg = NULL;
 	pol2_deg = NULL;
 
-	FR* mul_stack = MUL_PP_P(pol_head, polynom2);
-	FR* sub_stack = SUB_PP_P(polynom1, mul_stack);
-	delete_P(mul_stack);
-	if (sub_stack != NULL)
-	{
-		if (sub_stack->numerator[0] == 1)
-		{
-			stack = pol_head;
-			if (stack != new_polynom)
-			{
-				while (stack->next != new_polynom) stack = stack->next;
-				delete_P(new_polynom);
-				stack->next = NULL;
-			}
-			else
-			{
-				delete_P(stack);
-				stack = NULL;
-				pol_head = NULL;
-			}
-		}
-		delete_P(sub_stack);
-	}
+	
 
 	return pol_head;
 }
@@ -1940,11 +1928,23 @@ FR* MOD_PP_P(FR* polynom1, FR* polynom2)
 //НОД многочленов
 FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 {
-	FR* stack1 = copy_P(polynom1);
-	FR* stack2 = copy_P(polynom2);
+	FR* koef = NULL;
+	koef = FAC_P_Q(polynom1);
+	FR* stack1 = DIV_PQ_P(polynom1, koef);
+
+	delete_Q(koef);
+	koef = NULL;
+
+	koef = FAC_P_Q(polynom2);
+	FR* stack2 = DIV_PQ_P(polynom2, koef);
+
+	delete_Q(koef);
+	koef = NULL;
+
 	FR* stack = NULL;
 	int* pol1_deg = NULL;
 	int* pol2_deg = NULL;
+
 	
 	if (stack1 != NULL || stack2 != NULL) //пока один из многочленов не станет 0
 	{
@@ -1968,74 +1968,56 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 			}
 			pol1_deg = DEG_P_N(stack1);
 			pol2_deg = DEG_P_N(stack2);
-			if (COM_NN_D(pol1_deg, pol2_deg) == 2) stack = MOD_PP_P(stack1, stack2); //остаток от деления многочлена большей степени на многочлен меньшей 
-			if (COM_NN_D(pol1_deg, pol2_deg) == 1) stack = MOD_PP_P(stack2, stack1);
-			if (COM_NN_D(pol1_deg, pol2_deg) == 0)
+			if (COM_NN_D(pol1_deg, pol2_deg) != 1)
 			{
-				FR* tmp = SUB_PP_P(stack1, stack2);
-				if (tmp != NULL)
-				{
-					if (tmp->numerator[0] == 1) stack = MOD_PP_P(stack2, stack1);
-					else stack = MOD_PP_P(stack1, stack2);
-					delete_P(tmp);
-					tmp = NULL;
-				}
-				else stack = MOD_PP_P(stack1, stack2);
-			}
-			if (COM_NN_D(pol1_deg, pol2_deg) == 2) //на место большего многочлена пишем полученный остаток
-			{
-				delete_P(stack1);
-				delete[] pol1_deg;
-				pol1_deg = NULL;
-				stack1 = copy_P(stack);
-				pol1_deg = DEG_P_N(stack1);
-				delete_P(stack);
-				continue;
-			}
-			if (COM_NN_D(pol1_deg, pol2_deg) == 1)
-			{
-				delete_P(stack2);
-				delete[] pol2_deg;
-				pol2_deg = NULL;
-				stack2 = copy_P(stack);
-				pol2_deg = DEG_P_N(stack2);
-				delete_P(stack);
-				continue;
-			}
-			if (COM_NN_D(pol1_deg, pol2_deg) == 0)
-			{
-				FR* tmp = SUB_PP_P(stack1, stack2);
-				if (tmp != NULL)
-				{
-					if (tmp->numerator[0] == 1)
-					{
-						delete_P(stack2);
-						delete[] pol2_deg;
-						pol2_deg = NULL;
-						stack2 = copy_P(stack);
-						pol2_deg = DEG_P_N(stack2);
-						delete_P(stack);
-					}
-					else
-					{
-						delete_P(stack1);
-						delete[] pol1_deg;
-						pol1_deg = NULL;
-						stack1 = copy_P(stack);
-						pol1_deg = DEG_P_N(stack1);
-						delete_P(stack);
-					}
-				}
-				else
+				stack = MOD_PP_P(stack1, stack2);
+				if (COM_NN_D(pol1_deg, pol2_deg) == 2)
 				{
 					delete_P(stack1);
+					stack1 = NULL;
 					delete[] pol1_deg;
 					pol1_deg = NULL;
 					stack1 = copy_P(stack);
-					pol1_deg = DEG_P_N(stack1);
-					delete_P(stack);
+				}
+				else
+				{
+					FR* tmp = SUB_PP_P(stack1, stack2);
+					if (tmp != NULL)
+					{
+						if (tmp->numerator[0] == 1)
+						{
+							delete_P(stack2);
+							stack2 = NULL;
+							delete[] pol2_deg;
+							pol2_deg = NULL;
+							stack2 = copy_P(stack);
+						}
+						else
+						{
+							delete_P(stack1);
+							stack1 = NULL;
+							delete[] pol1_deg;
+							pol1_deg = NULL;
+							stack1 = copy_P(stack);
+						}
+					}
+					else stack1 = NULL;
+					delete_P(tmp);
+					tmp = NULL;
 				}
 			}
+			else
+			{
+				stack = MOD_PP_P(stack2, stack1);
+				delete_P(stack2);
+				stack2 = NULL;
+				delete[] pol2_deg;
+				pol2_deg = NULL;
+				stack2 = copy_P(stack);
+			}
+			delete_P(stack);
+			if (stack1 != NULL) pol1_deg = DEG_P_N(stack1);
+			if (stack2 != NULL) pol2_deg = DEG_P_N(stack2);
 		}
 	}
 	else return NULL;
@@ -2091,10 +2073,14 @@ FR* DER_P_P(FR* polynom)
 FR* NMR_P_P(FR* polynom)
 {
 	int len;
-	FR* stack1 = DER_P_P(polynom);
-	FR* stack2 = GCF_PP_P(polynom, stack1);
+	FR* koef = FAC_P_Q(polynom);
+	FR* stack = DIV_PQ_P(polynom, koef);
+	FR* stack1 = DER_P_P(stack);
+	FR* stack2 = GCF_PP_P(stack, stack1);
+	
+	delete_Q(koef);
 	delete_P(stack1);
-	FR* koef = FAC_P_Q(stack2);
+	koef = FAC_P_Q(stack2);
 
 	stack1 = DIV_PQ_P(stack2, koef);
 	delete_P(stack2);
@@ -2103,7 +2089,8 @@ FR* NMR_P_P(FR* polynom)
 	delete[] koef->denominator;
 	delete koef;
 
-	FR* result = DIV_PP_P(polynom, stack1);
+	FR* result = DIV_PP_P(stack, stack1);
+	delete_P(stack);
 	delete_P(stack1);
 
 	return result;
