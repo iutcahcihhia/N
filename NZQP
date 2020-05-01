@@ -608,7 +608,7 @@ int* SUB_NN_N(int* operand1, int* operand2)
 
 	int position = len1;
 
-	if (COM_NN_D(operand1, operand2) != 1) result = new int[len1]; //максимальная длина результата - длина большего числа
+	if (COM_NN_D(operand1, operand2) != 1) result = new int[2*len1]; //максимальная длина результата - длина большего числа
 	else return NULL; //проверка на отрицательность результата
 	
 	
@@ -1911,11 +1911,9 @@ FR* MOD_PP_P(FR* polynom1, FR* polynom2)
 	if (div_stack != NULL)
 	{
 		FR* mul_stack = MUL_PP_P(polynom2, div_stack); //умножаем частное на второй многочлен
-		FR* stack1 = copy_P(polynom1);
-		FR* new_polynom = SUB_PP_P(stack1, mul_stack); //вычитаем из первого многочлена то что получили ранее, получаем остаток
+		FR* new_polynom = SUB_PP_P(polynom1, mul_stack); //вычитаем из первого многочлена то что получили ранее, получаем остаток
 		delete_P(div_stack);
 		delete_P(mul_stack);
-		delete_P(stack1);
 		return new_polynom;
 	}
 	else
@@ -1928,23 +1926,16 @@ FR* MOD_PP_P(FR* polynom1, FR* polynom2)
 //НОД многочленов
 FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 {
-	FR* koef = NULL;
-	koef = FAC_P_Q(polynom1);
+	FR* koef = FAC_P_Q(polynom1);
 	FR* stack1 = DIV_PQ_P(polynom1, koef);
-
 	delete_Q(koef);
-	koef = NULL;
-
 	koef = FAC_P_Q(polynom2);
 	FR* stack2 = DIV_PQ_P(polynom2, koef);
-
 	delete_Q(koef);
-	koef = NULL;
 
 	FR* stack = NULL;
 	int* pol1_deg = NULL;
 	int* pol2_deg = NULL;
-
 	
 	if (stack1 != NULL || stack2 != NULL) //пока один из многочленов не станет 0
 	{
@@ -1952,76 +1943,72 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 		{
 			if (stack1 == NULL)
 			{
-				delete[] pol1_deg;
-				delete[] pol2_deg;
-				pol1_deg = NULL;
-				pol2_deg = NULL;
+				if (stack2->numerator[0] == 1) stack2->numerator[0] = 0;
 				return stack2;
 			}
 			if (stack2 == NULL)
 			{
-				delete[] pol1_deg;
-				delete[] pol2_deg;
-				pol1_deg = NULL;
-				pol2_deg = NULL;
+				if (stack1->numerator[0] == 1) stack1->numerator[0] = 0;
 				return stack1;
 			}
+			
 			pol1_deg = DEG_P_N(stack1);
 			pol2_deg = DEG_P_N(stack2);
 			if (COM_NN_D(pol1_deg, pol2_deg) != 1)
 			{
 				stack = MOD_PP_P(stack1, stack2);
-				if (COM_NN_D(pol1_deg, pol2_deg) == 2)
+				if (stack != NULL)
 				{
-					delete_P(stack1);
-					stack1 = NULL;
-					delete[] pol1_deg;
-					pol1_deg = NULL;
-					stack1 = copy_P(stack);
-				}
-				else
-				{
-					FR* tmp = SUB_PP_P(stack1, stack2);
-					if (tmp != NULL)
+					koef = FAC_P_Q(stack);
+					if (COM_NN_D(pol1_deg, pol2_deg) == 2)
 					{
-						if (tmp->numerator[0] == 1)
+						delete_P(stack1);
+						stack1 = DIV_PQ_P(stack, koef);
+						delete[] pol1_deg;
+						pol1_deg = DEG_P_N(stack1);
+					}
+					else
+					{
+						FR* sub_stack = SUB_PP_P(stack1, stack2);
+						if (sub_stack->numerator[0] == 1)
 						{
 							delete_P(stack2);
-							stack2 = NULL;
+							stack2 = DIV_PQ_P(stack, koef);
 							delete[] pol2_deg;
-							pol2_deg = NULL;
-							stack2 = copy_P(stack);
+							pol2_deg = DEG_P_N(stack2);
 						}
 						else
 						{
 							delete_P(stack1);
-							stack1 = NULL;
+							stack1 = DIV_PQ_P(stack, koef);
 							delete[] pol1_deg;
-							pol1_deg = NULL;
-							stack1 = copy_P(stack);
+							pol1_deg = DEG_P_N(stack1);
 						}
+						delete_P(sub_stack);
 					}
-					else stack1 = NULL;
-					delete_P(tmp);
-					tmp = NULL;
+					delete_Q(koef);
 				}
+				else
+				{
+					delete_P(stack1);
+					delete[] pol1_deg;
+					stack1 = NULL;
+				}
+				delete_P(stack);
 			}
 			else
 			{
 				stack = MOD_PP_P(stack2, stack1);
+				koef = FAC_P_Q(stack);
 				delete_P(stack2);
-				stack2 = NULL;
+				stack2 = DIV_PQ_P(stack, koef);
 				delete[] pol2_deg;
-				pol2_deg = NULL;
-				stack2 = copy_P(stack);
+				pol2_deg = DEG_P_N(stack2);
+				delete_P(stack);
 			}
-			delete_P(stack);
-			if (stack1 != NULL) pol1_deg = DEG_P_N(stack1);
-			if (stack2 != NULL) pol2_deg = DEG_P_N(stack2);
 		}
 	}
 	else return NULL;
-
 }
 
 //производная
@@ -2728,7 +2715,7 @@ void menu_Q(int choice, bool action_flag)
 		num_output_Q(fraction1, 1);
 		cout << "Fraction 2: ";
 		num_output_Q(fraction2, 1);
-		if (choice != menusize_Z && choice != 2 && choice != 3) cout << "Result: ";
+		if (choice != menusize_Q && choice != 2 && choice != 3) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
