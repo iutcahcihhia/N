@@ -295,6 +295,7 @@ void delete_P(FR* polynom)
 	polynom = NULL;
 }
 
+//удаление дроби из памяти
 void delete_Q(FR* fraction)
 {
 	delete[] fraction->numerator;
@@ -380,7 +381,7 @@ FR* sort_P(FR* polynom)
 		if (COM_NN_D(stack->degree, stack->next->degree) == 0)
 		{
 			FR* stack_cur = stack;
-			stack = ADD_QQ_Q(stack_cur, stack_cur->next);
+			stack = ADD_QQ_Q(stack_cur, stack_cur->next);              
 			len = len_search(stack_cur->degree, 0);
 			stack->degree = new int[len];
 			for (int i = 0; i < len; i++) stack->degree[i] = stack_cur->degree[i];
@@ -975,7 +976,7 @@ int* LCM_NN_N(int* operand1, int* operand2)
 //абсолютная величина числа
 int* ABS_Z_N(int* number)
 {
-	int* p;
+	int* p = NULL;
 	int len = len_search(number, 1);
 	p = new int[len];
 	for (int i = 0; i < len; i++) p[i] = number[i + 1]; //модуль целого числа начинается со второго элемента массива
@@ -1863,7 +1864,7 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 	int* pol1_deg = DEG_P_N(stack1);
 	int* pol2_deg = DEG_P_N(stack2);
 
-	while (COM_NN_D(pol1_deg, pol2_deg) != 1) //пока числитель второго многочлена не станет больше
+	while (COM_NN_D(pol1_deg, pol2_deg) != 1) //пока степень второго многочлена не станет больше
 	{
 		if (pol_head == NULL) //делим коэффициенты первых одночленов
 		{
@@ -1890,7 +1891,6 @@ FR* DIV_PP_P(FR* polynom1, FR* polynom2)
 		pol1_deg = NULL;
 		if (stack1 != NULL) pol1_deg = DEG_P_N(stack1); //переобозначаем степень первого многочлена
 		else break;
-		
 	}
 	delete_P(stack1);
 	delete_P(stack2);
@@ -1926,12 +1926,30 @@ FR* MOD_PP_P(FR* polynom1, FR* polynom2)
 //НОД многочленов
 FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 {
-	FR* koef = FAC_P_Q(polynom1);
-	FR* stack1 = DIV_PQ_P(polynom1, koef);
-	delete_Q(koef);
-	koef = FAC_P_Q(polynom2);
-	FR* stack2 = DIV_PQ_P(polynom2, koef);
-	delete_Q(koef);
+	FR* koef1 = FAC_P_Q(polynom1);
+	FR* koef2 = FAC_P_Q(polynom1);
+	FR* stack1 = DIV_PQ_P(polynom1, koef1);
+	FR* stack2 = DIV_PQ_P(polynom2, koef2);
+
+	int* num1 = ABS_Z_N(koef1->numerator);
+	int* num2 = ABS_Z_N(koef2->numerator);
+	int* den1 = ABS_Z_N(koef1->denominator);
+	int* den2 = ABS_Z_N(koef2->denominator);
+	int* gcd = GCF_NN_N(num1, num2);
+	int* lcm = LCM_NN_N(den1, den2);
+
+	FR* grand_koef = new FR;
+	grand_koef->numerator = TRANS_N_Z(gcd);
+	grand_koef->denominator = TRANS_N_Z(lcm);
+
+	delete[] num1;
+	delete[] num2;
+	delete[] den1;
+	delete[] den2;
+	delete[] gcd;
+	delete[] lcm;
+	delete_Q(koef1);
+	delete_Q(koef2);
 
 	FR* stack = NULL;
 	int* pol1_deg = NULL;
@@ -1943,15 +1961,36 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 		{
 			if (stack1 == NULL)
 			{
-				if (stack2->numerator[0] == 1) stack2->numerator[0] = 0;
-				return stack2;
+				if (stack2->numerator[0] == 1)
+				{
+					FR* tmp = stack2;
+					while (tmp != NULL)
+					{
+						if (tmp->numerator[0] == 1) tmp->numerator[0] = 0;
+						else tmp->numerator[0] = 0;
+						tmp = tmp->next;
+					}
+				}
+				FR* result = MUL_PQ_P(stack2, grand_koef);
+				delete_Q(grand_koef);
+				return result;
 			}
 			if (stack2 == NULL)
 			{
-				if (stack1->numerator[0] == 1) stack1->numerator[0] = 0;
-				return stack1;
+				if (stack1->numerator[0] == 1)
+				{
+					FR* tmp = stack1;
+					while (tmp != NULL)
+					{
+						if (tmp->numerator[0] == 1) tmp->numerator[0] = 0;
+						else tmp->numerator[0] = 0;
+						tmp = tmp->next;
+					}
+				}
+				FR* result = MUL_PQ_P(stack1, grand_koef);
+				delete_Q(grand_koef);
+				return result;
 			}
-			
 			pol1_deg = DEG_P_N(stack1);
 			pol2_deg = DEG_P_N(stack2);
 			if (COM_NN_D(pol1_deg, pol2_deg) != 1) //сравнение степеней многочленов, запись остатка на место большего
@@ -1959,7 +1998,7 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 				stack = MOD_PP_P(stack1, stack2);
 				if (stack != NULL)
 				{
-					koef = FAC_P_Q(stack);
+					FR* koef = FAC_P_Q(stack);
 					if (COM_NN_D(pol1_deg, pol2_deg) == 2)
 					{
 						delete_P(stack1);
@@ -1999,12 +2038,13 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 			else
 			{
 				stack = MOD_PP_P(stack2, stack1);
-				koef = FAC_P_Q(stack);
+				FR* koef = FAC_P_Q(stack);
 				delete_P(stack2);
 				stack2 = DIV_PQ_P(stack, koef);
 				delete[] pol2_deg;
 				pol2_deg = DEG_P_N(stack2);
 				delete_P(stack);
+				delete_Q(koef);
 			}
 		}
 	}
@@ -2060,25 +2100,19 @@ FR* DER_P_P(FR* polynom)
 FR* NMR_P_P(FR* polynom)
 {
 	int len;
-	FR* koef = FAC_P_Q(polynom);
-	FR* stack = DIV_PQ_P(polynom, koef);
-	FR* stack1 = DER_P_P(stack);
-	FR* stack2 = GCF_PP_P(stack, stack1);
-	
-	delete_Q(koef);
-	delete_P(stack1);
-	koef = FAC_P_Q(stack2);
 
-	stack1 = DIV_PQ_P(stack2, koef);
+	FR* stack1 = DER_P_P(polynom);
+	FR* stack2 = GCF_PP_P(polynom, stack1);
+	FR* stack3 = DIV_PP_P(polynom, stack2);
+
+	delete_P(stack1);
 	delete_P(stack2);
 
-	delete[] koef->numerator;
-	delete[] koef->denominator;
-	delete koef;
+	FR* koef = FAC_P_Q(stack3);
+	FR* result = DIV_PQ_P(stack3, koef);
 
-	FR* result = DIV_PP_P(stack, stack1);
-	delete_P(stack);
-	delete_P(stack1);
+	delete_P(stack3);
+	delete_Q(koef);
 
 	return result;
 }
