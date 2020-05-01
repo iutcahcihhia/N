@@ -1954,7 +1954,7 @@ FR* GCF_PP_P(FR* polynom1, FR* polynom2)
 			
 			pol1_deg = DEG_P_N(stack1);
 			pol2_deg = DEG_P_N(stack2);
-			if (COM_NN_D(pol1_deg, pol2_deg) != 1)
+			if (COM_NN_D(pol1_deg, pol2_deg) != 1) //сравнение степеней многочленов, запись остатка на место большего
 			{
 				stack = MOD_PP_P(stack1, stack2);
 				if (stack != NULL)
