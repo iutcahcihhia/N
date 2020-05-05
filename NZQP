@@ -1398,6 +1398,7 @@ FR* RED_Q_Q(FR* fraction)
 int INT_Q_B(FR* fraction)
 {
 	int* stack;
+	if (fraction->numerator[1] == 0) return 1;
 
 	stack = MOD_ZZ_Z(fraction->numerator, fraction->denominator); //остаток от деления числителя на знаменатель
 
