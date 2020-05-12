@@ -1,14 +1,19 @@
 #include <iostream>
+#include <fstream>
+#include <windows.h>
 #include <conio.h>
+#include <string>
 
 using namespace std;
 
+//ключевые клавиши
 const int _up = 72;
 const int _down = 80;
 const int _esc = 27;
 const int _enter = 13;
 const int _backspace = 8;
 
+//тип данных для дроби или многочлена
 struct FR
 {
 	int* degree;
@@ -17,6 +22,7 @@ struct FR
 	FR* next;
 };
 
+//глобальные типы с которыми выполняются действия
 int* number1 = NULL;
 int* number2 = NULL;
 
@@ -26,15 +32,31 @@ FR* fraction2 = NULL;
 FR* polynom1 = NULL;
 FR* polynom2 = NULL;
 
-int menuwide = 30;
+//глобальные результаты действий
+int* result_NZ = NULL;
+FR* result_Q = NULL;
+FR* result_P1 = NULL;
+FR* result_P2 = NULL;
 
-string menu_module[] =
+//тексты меню
+string module_menu[] =
 {
 	"Instruction",
 	"N module",
 	"Z module",
 	"Q module",
 	"P module",
+	"Exit"
+};
+
+string input_menu[] =
+{
+	"Input operand 1: ",
+	"Input operand 2: ",
+	"Load operand 1 from file",
+	"Load operand 2 from file",
+	"Save operand 1 to file",
+	"Save operand 2 to file",
 	"Exit"
 };
 
@@ -86,12 +108,14 @@ string P_menu[] =
 	"Exit"
 };
 
-int module_menusize = sizeof(menu_module) / sizeof(menu_module[0]);
+//ширина меню и число пунктов в них
+const int menuwide = 40;
 int menusize_N = sizeof(N_menu) / sizeof(N_menu[0]);
 int menusize_Z = sizeof(Z_menu) / sizeof(Z_menu[0]);
 int menusize_Q = sizeof(Q_menu) / sizeof(Q_menu[0]);
 int menusize_P = sizeof(P_menu) / sizeof(P_menu[0]);
 
+//цифры
 enum keys
 {
 	key0 = 48, key1, key2, key3, key4, key5, key6, key7, key8, key9
@@ -100,14 +124,15 @@ enum keys
 int COM_NN_D(int* number1, int* number2);
 FR* ADD_QQ_Q(FR* fraction1, FR* fraction2);
 FR* RED_Q_Q(FR* fraction);
-int INT_Q_B(FR* fraction);
 
+//инструкция
 void instruction()
 {
 	cout << "In every module you should input 2 operands of current type to continue" << endl;
-	cout << "Module N. You can input new numbers in the Input numbers" << endl;
-	cout << "Module Z. You can input new numbers in the Input numbers" << endl;
-	cout << "Module Q. You can input new fractions in the Input fractions" << endl;
+	cout << "Module N. You can input new numbers or load them from file in the Input numbers" << endl;
+	cout << "Module Z. You can input new numbers or load them from file in the Input numbers" << endl;
+	cout << "Module Q. You can input new fractions or load them from file in the Input fractions" << endl;
+	cout << "To input fraction you should input numerator first, then press / and input denominator." << endl;
 	cout << "Module P. You should input koefficients and degrees of monomials. Press enter after every input." << endl;
 	cout << "For example:" << endl;
 	cout << "Koefficient 1: 3/2   Degree 1: 3" << endl;
@@ -133,8 +158,8 @@ int len_search(int* number, bool Z_flag)
 	return len;
 }
 
-//вывод целого или натурального числа на экран
-void num_output(int* number, bool Z_flag, bool q, bool endl_flag)
+//вывод различных типов на экран
+void num_output_NZ(int* number, bool Z_flag, bool q, bool endl_flag)
 {
 	int len = len_search(number, Z_flag);
 	if (Z_flag == true && number[0] == 1) cout << '-';
@@ -142,91 +167,88 @@ void num_output(int* number, bool Z_flag, bool q, bool endl_flag)
 	if (endl_flag == true) cout << endl;
 	if (q == true) cout << " / ";
 }
-
-//вывод дроби на экран
 void num_output_Q(FR* fraction, bool endl_flag)
 {
-	num_output(fraction->numerator, 1, 1, 0);
-	num_output(fraction->denominator, 1, 0, endl_flag);	
+	num_output_NZ(fraction->numerator, 1, 1, 0);
+	num_output_NZ(fraction->denominator, 1, 0, endl_flag);	
 }
-
-//вывод многочлена на экран
 void num_output_P(FR* polynom, bool endl_flag)
 {
+	FR* stack = polynom;
 	bool first_flag = false;
 	int den_len;
 	int num_len;
 	int* st1 = new int[2];
 	st1[0] = 1;
-	if (polynom != NULL)
+	if (stack != NULL)
 	{
 		while (true)
 		{
-			den_len = len_search(polynom->denominator, 1);
-			num_len = len_search(polynom->numerator, 1);
-			if (!(den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1))
+			den_len = len_search(stack->denominator, 1);
+			num_len = len_search(stack->numerator, 1);
+			if (!(den_len == 1 && num_len == 1 && stack->denominator[1] == 1 && stack->numerator[1] == 1))
 			{
 				if (first_flag == false)
 				{
-					if (polynom->numerator[0] == 0)
+					if (stack->numerator[0] == 0)
 					{
-						if (den_len == 1 && polynom->denominator[1] == 1) num_output(polynom->numerator, 1, 0, 0);
+						if (den_len == 1 && stack->denominator[1] == 1) num_output_NZ(stack->numerator, 1, 0, 0);
 						else
 						{
 							cout << "(";
-							num_output_Q(polynom, 0);
+							num_output_Q(stack, 0);
 							cout << ")";
 						}
 					}
 					else
 					{
-						if (den_len == 1 && polynom->denominator[1] == 1) num_output(polynom->numerator, 1, 0, 0);
+						if (den_len == 1 && stack->denominator[1] == 1) num_output_NZ(stack->numerator, 1, 0, 0);
 						else
 						{
 							cout << "-(";
-							polynom->numerator[0] = 0;
-							num_output_Q(polynom, 0);
+							stack->numerator[0] = 0;
+							num_output_Q(stack, 0);
 							cout << ")";
-							polynom->numerator[0] = 1;
+							stack->numerator[0] = 1;
 						}
 					}
 					first_flag = true;
 				}
 				else
 				{
-					if (polynom->numerator[0] == 0)
+					if (stack->numerator[0] == 0)
 					{
-						if (den_len == 1 && polynom->denominator[1] == 1)
+						if (den_len == 1 && stack->denominator[1] == 1)
 						{
 							cout << "+";
-							num_output(polynom->numerator, 1, 0, 0);
+							num_output_NZ(stack->numerator, 1, 0, 0);
 						}
 						else
 						{
 							cout << "+(";
-							num_output_Q(polynom, 0);
+							num_output_Q(stack, 0);
 							cout << ")";
 						}
 					}
 					else
 					{
-						if (den_len == 1 && polynom->denominator[1] == 1) num_output(polynom->numerator, 1, 0, 0);
+						if (den_len == 1 && stack->denominator[1] == 1) num_output_NZ(stack->numerator, 1, 0, 0);
 						else
 						{
 							cout << "-(";
-							polynom->numerator[0] = 0;
-							num_output_Q(polynom, 0);
+							stack->numerator[0] = 0;
+							num_output_Q(stack, 0);
 							cout << ")";
-							polynom->numerator[0] = 1;
+							stack->numerator[0] = 1;
 						}
 					}
 				}
 			}
-			if (COM_NN_D(polynom->degree, st1) == 2)
+			if (COM_NN_D(stack->degree, st1) == 2)
 			{
-				if (den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1)
+				if (den_len == 1 && num_len == 1 && stack->denominator[1] == 1 && stack->numerator[1] == 1)
 				{
-					if (polynom->numerator[0] == 0)
+					if (stack->numerator[0] == 0)
 					{
 						if (first_flag == false) cout << "x^";
 						else cout << "+x^";
@@ -234,14 +256,14 @@ void num_output_P(FR* polynom, bool endl_flag)
 					else cout << "-x^";
 				}
 				else cout << "*x^";
-				num_output(polynom->degree, 0, 0, 0);
+				num_output_NZ(stack->degree, 0, 0, 0);
 				if (first_flag == false) first_flag = true;
 			}
-			if (COM_NN_D(polynom->degree, st1) == 0)
+			if (COM_NN_D(stack->degree, st1) == 0)
 			{
-				if (den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1)
+				if (den_len == 1 && num_len == 1 && stack->denominator[1] == 1 && stack->numerator[1] == 1)
 				{
-					if (polynom->numerator[0] == 0)
+					if (stack->numerator[0] == 0)
 					{
 						if (first_flag == false) cout << "x";
 						else cout << "+x";
@@ -251,9 +273,9 @@ void num_output_P(FR* polynom, bool endl_flag)
 				else cout << "*x";
 				if (first_flag == false) first_flag = true;
 			}
-			if (den_len == 1 && num_len == 1 && polynom->denominator[1] == 1 && polynom->numerator[1] == 1 && COM_NN_D(polynom->degree, st1) == 1)
+			if (den_len == 1 && num_len == 1 && stack->denominator[1] == 1 && stack->numerator[1] == 1 && COM_NN_D(stack->degree, st1) == 1)
 			{
-				if (polynom->numerator[0] == 0)
+				if (stack->numerator[0] == 0)
 				{
 					if (first_flag == false) cout << "1";
 					else cout << "+1";
@@ -261,7 +283,7 @@ void num_output_P(FR* polynom, bool endl_flag)
 				else cout << "-1";
 				first_flag = true;
 			}
-			if (polynom->next != NULL) polynom = polynom->next;
+			if (stack->next != NULL) stack = stack->next;
 			else break;
 		}
 	}
@@ -271,7 +293,17 @@ void num_output_P(FR* polynom, bool endl_flag)
 	st1 = NULL;
 }
 
-//удаление многочлена из памяти
+//удаление многочлена и дроби из памяти
+void delete_Q(FR* fraction)
+{
+	if (fraction != NULL)
+	{
+		delete[] fraction->numerator;
+		delete[] fraction->denominator;
+		delete fraction;
+		fraction = NULL;
+	}
+}
 void delete_P(FR* polynom)
 {
 	FR* prev = NULL;
@@ -288,16 +320,7 @@ void delete_P(FR* polynom)
 	polynom = NULL;
 }
 
-//удаление дроби из памяти
-void delete_Q(FR* fraction)
-{
-	delete[] fraction->numerator;
-	delete[] fraction->denominator;
-	delete fraction;
-	fraction = NULL;
-}
-
-//копирование числа
+//копирование числа и многочлена
 int* copy_NZ(int* number, bool Z_flag)
 {
     int len = len_search(number, Z_flag);
@@ -305,37 +328,35 @@ int* copy_NZ(int* number, bool Z_flag)
 	for (int i = 0; i < len + Z_flag; i++) copy_number[i] = number[i];
 	return copy_number;
 }
-
-//копирование многочлена
 FR* copy_P(FR* polynom)
 {
 	FR* stack = polynom;
-	FR* new_polynom = NULL;
+	FR* copy_polynom = NULL;
 	FR* pol_head = NULL;
 	int len;
 	while (stack != NULL)
 	{
 		if (pol_head == NULL)
 		{
-			new_polynom = new FR;
-			new_polynom->next = NULL;
-			pol_head = new_polynom;
+			copy_polynom = new FR;
+			copy_polynom->next = NULL;
+			pol_head = copy_polynom;
 		}
 		else
 		{
-			new_polynom->next = new FR;
-			new_polynom = new_polynom->next;
-			new_polynom->next = NULL;
+			copy_polynom->next = new FR;
+			copy_polynom = copy_polynom->next;
+			copy_polynom->next = NULL;
 		}
 		len = len_search(stack->degree, 0);
-		new_polynom->degree = new int[len];
-		for (int i = 0; i < len; i++) new_polynom->degree[i] = stack->degree[i];
+		copy_polynom->degree = new int[len];
+		for (int i = 0; i < len; i++) copy_polynom->degree[i] = stack->degree[i];
 		len = len_search(stack->numerator, 1);
-		new_polynom->numerator = new int[len + 1];
-		for (int i = 0; i < len + 1; i++) new_polynom->numerator[i] = stack->numerator[i];
+		copy_polynom->numerator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) copy_polynom->numerator[i] = stack->numerator[i];
 		len = len_search(stack->denominator, 1);
-		new_polynom->denominator = new int[len + 1];
-		for (int i = 0; i < len + 1; i++) new_polynom->denominator[i] = stack->denominator[i];
+		copy_polynom->denominator = new int[len + 1];
+		for (int i = 0; i < len + 1; i++) copy_polynom->denominator[i] = stack->denominator[i];
 		stack = stack->next;
 	}
 	return pol_head;
@@ -453,6 +474,365 @@ FR* sort_P(FR* polynom)
 	}
 	return pol_head;
 }
+
+//запись различных типов в файл
+void write_to_file_NZ(int* number, bool Z_flag)
+{
+	char file_name[50];
+	cout << "File name: ";
+	cin >> file_name;
+	strcat_s(file_name, ".txt");
+
+	ofstream fout;
+	fout.open(file_name);
+	if (!fout.is_open()) cout << "Error! File wasn't open.";
+	else
+	{
+		for (int i = 0; i < len_search(number, Z_flag) + Z_flag; i++) fout << number[i];
+		fout << endl;
+		fout.close();
+	}
+}
+void write_to_file_Q(FR* fraction)
+{
+	char file_name[50];
+	cout << "File name: ";
+	cin >> file_name;
+	strcat_s(file_name, ".txt");
+
+	ofstream fout;
+	fout.open(file_name);
+	if (!fout.is_open()) cout << "Error! File wasn't open.";
+	else
+	{
+		for (int i = 0; i < len_search(fraction->numerator, 1) + 1; i++) fout << fraction->numerator[i];
+		fout << endl;
+		for (int i = 0; i < len_search(fraction->denominator, 1) + 1; i++) fout << fraction->denominator[i];
+		fout << endl;
+		fout.close();
+	}
+}
+void write_to_file_P(FR* polynom)
+{
+	char file_name[50];
+	cout << "File name: ";
+	cin >> file_name;
+	strcat_s(file_name, ".txt");
+
+	ofstream fout;
+	fout.open(file_name);
+	if (!fout.is_open()) cout << "Error! File wasn't open.";
+	else
+	{
+		if (polynom != NULL)
+		{
+			FR* stack = polynom;
+			while (stack != NULL)
+			{
+				for (int i = 0; i < len_search(stack->numerator, 1) + 1; i++) fout << stack->numerator[i];
+				fout << endl;
+				for (int i = 0; i < len_search(stack->denominator, 1) + 1; i++) fout << stack->denominator[i];
+				fout << endl;
+				for (int i = 0; i < len_search(stack->degree, 0); i++) fout << stack->degree[i];
+				fout << endl;
+				stack = stack->next;
+			}
+		}
+		else fout << "00" << endl << "01" << endl << "0" << endl;
+		fout.close();
+	}
+}
+
+//чтение различных типов из файла
+int* read_from_file_NZ(bool Z_flag)
+{
+	int* number = NULL;
+
+	char file_name[50];
+	cout << "File name: ";
+	cin >> file_name;
+	strcat_s(file_name, ".txt");
+
+	ifstream fin;
+	fin.open(file_name);
+	if (!fin.is_open())
+	{
+		cout << "Error! File wasn't open.";
+		Sleep(500);
+	}
+	else
+	{
+		if (!fin.eof())
+		{
+			int maxl = 20;
+			number = new int[maxl];
+			char num, stack; int i = 0;
+			while (!fin.eof())
+			{
+				fin.get(num);
+				if (Z_flag == true && num != '0' && num != '1' && i == 0 && num != 10)
+				{
+					number[i] = 0;
+					i++;
+				}
+				if (i == maxl)
+				{
+					maxl += 20;
+					int* stack = new int[maxl];
+					for (int i = 0; i < maxl - 20; i++) stack[i] = number[i];
+					delete[] number;
+					number = stack;
+					stack = NULL;
+				}
+				if (num != 10) number[i] = num - '0';
+				else break;
+				if (Z_flag == false && number[0] == 0 && i == 1 && num != 10) break;
+				i++;
+			}
+			if (i == 1)
+			{
+				if (number[0] == 1)
+				{
+					number[0] = 0;
+					number[1] = 1;
+				}
+				else number[1] = 0;
+			}
+		}
+		else
+		{
+			number = new int[2];
+			number[0] = 0;
+			if (Z_flag == true) number[1] = 0;
+		}
+		fin.close();
+	}
+	return number;
+}
+FR* read_from_file_Q()
+{
+	FR* fraction = NULL;
+	FR* result = NULL;
+
+	char file_name[50];
+	cout << "File name: ";
+	cin >> file_name;
+	strcat_s(file_name, ".txt");
+
+	ifstream fin;
+	fin.open(file_name);
+	if (!fin.is_open())
+	{
+		cout << "Error! File wasn't open.";
+		Sleep(500);
+	}
+	else
+	{
+		int i, maxl;
+		char num;
+		fraction = new FR;
+		fraction->next = NULL;
+		maxl = 20;
+		fraction->numerator = new int[maxl];
+		i = 0;
+		fraction->numerator[0] = 0;
+		fraction->numerator[1] = 0;
+		while (!fin.eof())
+		{
+			fin.get(num);
+			if (i == 0 && num != '0' && num != '1')
+			{
+				fraction->numerator[i] = 0;
+				i++;
+			}
+			if (i == maxl)
+			{
+				maxl += 20;
+				int* stack = new int[maxl];
+				for (int i = 0; i < maxl - 20; i++) stack[i] = fraction->numerator[i];
+				delete[] fraction->numerator;
+				fraction->numerator = stack;
+				stack = NULL;
+			}
+			if (num != 10) fraction->numerator[i] = num - '0';
+			else
+			{
+				if (i == 1 && (fraction->numerator[0] == 1 || fraction->numerator[0] == 0))
+				{
+					fraction->numerator[0] = 0;
+					if (fraction->numerator[0] == 1) fraction->numerator[1] = 1;
+					else fraction->numerator[1] = 0;
+				}
+				break;
+			}
+			i++;
+		}
+		maxl = 20;
+		i = 0;
+		fraction->denominator = new int[maxl];
+		fraction->denominator[0] = 0;
+		fraction->denominator[1] = 1;
+		while (!fin.eof())
+		{
+			fin.get(num);
+			if (i == 0 && num != '0')
+			{
+				fraction->denominator[i] = 0;
+				i++;
+			}
+			if (i == maxl)
+			{
+				maxl += 20;
+				int* stack = new int[maxl];
+				for (int i = 0; i < maxl - 20; i++) stack[i] = fraction->denominator[i];
+				delete[] fraction->denominator;
+				fraction->denominator = stack;
+				stack = NULL;
+			}
+			if (num != 10) fraction->denominator[i] = num - '0';
+			else
+			{
+				if (i == 1 && fraction->denominator[0] == 0) fraction->denominator[1] = 1;
+				break;
+			}
+			i++;
+		}
+		fin.close();
+		result = RED_Q_Q(fraction);
+		delete_Q(fraction);
+	}
+	return result;
+}
+FR* read_from_file_P()
+{
+	FR* polynom = NULL;
+	FR* pol_head = NULL;
+
+	char file_name[50];
+	cout << "File name: ";
+	cin >> file_name;
+	strcat_s(file_name, ".txt");
+
+	ifstream fin;
+	fin.open(file_name);
+	if (!fin.is_open())
+	{
+		cout << "Error! File wasn't open.";
+		Sleep(500);
+	}
+	else
+	{
+		int i, maxl;
+		char num;
+		while (!fin.eof())
+		{
+			if (pol_head == NULL)
+			{
+				polynom = new FR;
+				pol_head = polynom;
+				polynom->next = NULL;
+			}
+			else
+			{
+				polynom->next = new FR;
+				polynom = polynom->next;
+				polynom->next = NULL;
+			}
+			if (!fin.eof())
+			{
+				maxl = 20;
+				polynom->numerator = new int[maxl];
+				i = 0;
+				while (!fin.eof())
+				{
+					fin.get(num);
+					if (i == 0 && num != '0' && num != '1')
+					{
+						polynom->numerator[i] = 0;
+						i++;
+					}
+					if (i == maxl)
+					{
+						maxl += 20;
+						int* stack = new int[maxl];
+						for (int i = 0; i < maxl - 20; i++) stack[i] = polynom->numerator[i];
+						delete[] polynom->numerator;
+						polynom->numerator = stack;
+						stack = NULL;
+					}
+					if (num != 10) polynom->numerator[i] = num - '0';
+					else break;
+					i++;
+				}
+			}
+			else
+			{
+				polynom->numerator = new int[2];
+				polynom->numerator[0] = 0;
+				polynom->numerator[1] = 0;
+			}
+			if (!fin.eof())
+			{
+				maxl = 20;
+				polynom->denominator = new int[maxl];
+				i = 0;
+				while (!fin.eof())
+				{
+					fin.get(num);
+					if (i == maxl)
+					{
+						maxl += 20;
+						int* stack = new int[maxl];
+						for (int i = 0; i < maxl - 20; i++) stack[i] = polynom->denominator[i];
+						delete[] polynom->denominator;
+						polynom->denominator = stack;
+						stack = NULL;
+					}
+					if (num != 10) polynom->denominator[i] = num - '0';
+					else break;
+					i++;
+				}
+			}
+			else
+			{
+				polynom->denominator = new int[2];
+				polynom->denominator[0] = 0;
+				polynom->denominator[1] = 1;
+			}
+			if (!fin.eof())
+			{
+				maxl = 20;
+				polynom->degree = new int[maxl];
+				i = 0;
+				while (!fin.eof())
+				{
+					fin.get(num);
+					if (i == maxl)
+					{
+						maxl += 20;
+						int* stack = new int[maxl];
+						for (int i = 0; i < maxl - 20; i++) stack[i] = polynom->degree[i];
+						delete[] polynom->degree;
+						polynom->degree = stack;
+						stack = NULL;
+					}
+					if (num != 10) polynom->degree[i] = num - '0';
+					else break;
+					i++;
+				}
+			}
+			else
+			{
+				polynom->degree = new int[1];
+				polynom->degree[0] = 0;
+			}
+		}
+		fin.close();
+	}
+	pol_head = sort_P(pol_head);
+	return pol_head;
+}
+
 
 
 //модуль N
@@ -832,9 +1212,18 @@ int* GCF_NN_N(int* operand1, int* operand2)
 //НОК натуральных чисел
 int* LCM_NN_N(int* operand1, int* operand2)
 {
+	int* result = NULL;
 	int* stack1 = MUL_NN_N(operand1, operand2); //LCM(a,b) = (a*b)/GCD(a,b)
 	int* stack2 = GCF_NN_N(operand1, operand2);
-	int* result = DIV_NN_N(stack1, stack2);
+	if (stack2 != NULL)
+	{
+		result = DIV_NN_N(stack1, stack2);
+		if (NZER_N_B(result) == 0)
+		{
+			delete[] result;
+			result = NULL;
+		}
+	}
 
 	delete[] stack1;
 	delete[] stack2;
@@ -1657,7 +2046,7 @@ int* input_N(int n, int counter)
 			cout << "Polynom " << n << " is sum of (koefficient)*x^(degree)" << endl;
 			cout << "Input degree " << counter << ": ";
 		}
-		num_output(number, 0, 0, 1);
+		num_output_NZ(number, 0, 0, 1);
 		num = _getch();
 		if (num >= key0 && num <= key9 && len < maxl && null_flag == false)
 		{
@@ -1709,7 +2098,7 @@ int* input_Z(int n)
 	{
 		system("cls");
 		cout << "Input number " << n << ": ";
-		num_output(number, 1, 0, 1);
+		num_output_NZ(number, 1, 0, 1);
 		num = _getch();
 		if (len == 0)
 		{
@@ -1796,7 +2185,7 @@ FR* input_Q(int n, int counter, bool koef)
 			cout << "Polynom " << n << " is sum of (koefficient)*x^(degree)" << endl;
 			cout << "Input koefficient " << counter << ": ";
 		}
-		num_output(fraction->numerator, 1, 0, 1);
+		num_output_NZ(fraction->numerator, 1, 0, 1);
 		num = _getch();
 		if (len == 0)
 		{
@@ -1948,15 +2337,13 @@ FR* input_P(int n)
 	int maxl = 20;
 	char num;
 	int k = 0;
-	bool first_flag = false;
 	while (true) //ввод коэффициентов и степеней многочленов
 	{
-		if (first_flag == false)
+		if (pol_head == NULL)
 		{
 			polynom = input_Q(n, counter, 1);
 			polynom->degree = input_N(n, counter);
 			pol_head = polynom;
-			first_flag = true;
 		}
 		else
 		{
@@ -1965,39 +2352,26 @@ FR* input_P(int n)
 			polynom->degree = input_N(n, counter);
 		}
 		polynom->next = NULL;
-		polynom = pol_head;
-		int i = 1;
-		while (true)
-		{
-			cout << "Koefficient " << i << ": ";
-			num_output_Q(polynom, 1);
-			cout << "Degree " << i << ": ";
-			num_output(polynom->degree, 0, 0, 1);
-			i++;
-			if (polynom->next != NULL) polynom = polynom->next;
-			else
-			{
-				cout << "Press enter to continue" << endl << "Press esc to save changes and exit from input";
-				break;
-			}
-		}
-
+		cout << "Polynom " << n << ": ";
+		num_output_P(pol_head, 1);	
+		cout << "Press enter to continue" << endl << "Press esc to save changes and exit from input";
 		num = _getch();
 		if (num == _esc) break;
 		else counter++;
 	}
-	polynom = pol_head;
-	polynom = sort_P(pol_head);
-	return polynom;
+	pol_head = sort_P(pol_head);
+	return pol_head;
 }
 
+void input_arrow_position(int type);
+
 //меню
-void module_menu(int choice)
+void menu_module(int choice)
 {
 	system("cls");
 	cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
 	int i = 1;
-	for (string menutxt : menu_module)
+	for (string menutxt : module_menu)
 	{
 		string marker;
 		if (choice == i) marker = " >"; else marker = "  ";
@@ -2008,6 +2382,77 @@ void module_menu(int choice)
 		i++;
 	}
 	cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+}
+void menu_input(int choice, int type)
+{
+	system("cls");
+	cout << (char)201 << string(menuwide - 2, 205) << (char)187 << endl;
+	int i = 1;
+	for (string menutxt : input_menu)
+	{
+		string marker;
+		if (choice == i) marker = " >"; else marker = "  ";
+		char num = i + '0';
+		string menuline;
+		if (i < 10)	menuline = (char)186 + marker + " " + num + ". " + menutxt;
+		else menuline = (char)186 + marker + char(i / 10 + '0') + char(i % 10 + '0') + ". " + menutxt;
+		menuline = menuline + string(menuwide - menuline.size() - 1, ' ') + (char)186;
+		cout << menuline << endl;
+		i++;
+	}
+	cout << (char)200 + string(menuwide - 2, 205) + (char)188 << endl;
+	switch (type)
+	{
+	case 1: 
+	{
+		cout << "Number 1: ";
+		if (number1 != NULL) num_output_NZ(number1, 0, 0, 1);
+		else cout << "Number 1 doesn't exist!" << endl;
+		cout << "Number 2: ";
+		if (number2 != NULL) num_output_NZ(number2, 0, 0, 1);
+		else cout << "Number 2 doesn't exist!" << endl;
+		break;
+	}
+	case 2:
+	{
+		cout << "Number 1: ";
+		if (number1 != NULL) num_output_NZ(number1, 1, 0, 1);
+		else cout << "Number 1 doesn't exist!" << endl;
+		cout << "Number 2: ";
+		if (number2 != NULL) num_output_NZ(number2, 1, 0, 1);
+		else cout << "Number 2 doesn't exist!" << endl;
+		break;
+	}
+	case 3:
+	{
+		cout << "Fraction 1: ";
+		if (fraction1 != NULL)
+		{
+			if (INT_Q_B(fraction1) == 0) num_output_Q(fraction1, 1);
+			else num_output_NZ(fraction1->numerator, 1, 0, 1);
+		}
+		else cout << "Fraction 1 doesn't exist!" << endl;
+		cout << "Fraction 2: ";
+		if (fraction2 != NULL)
+		{
+			if (INT_Q_B(fraction2) == 0) num_output_Q(fraction2, 1);
+			else num_output_NZ(fraction2->numerator, 1, 0, 1);
+		}
+		else cout << "Fraction 2 doesn't exist!" << endl;
+		break;
+	}
+	case 4:
+	{
+		cout << "Polynom 1: ";
+		if (polynom1 != NULL) num_output_P(polynom1, 1);
+		else cout << "Polynom 1 doesn't exist!" << endl;
+		cout << "Polynom 2: ";
+		if (polynom2 != NULL) num_output_P(polynom2, 1);
+		else cout << "Polynom 2 doesn't exist!" << endl;
+		break;
+	}
+	}
+	
 }
 void menu_N(int choice, bool action_flag)
 {
@@ -2030,80 +2475,82 @@ void menu_N(int choice, bool action_flag)
 	if (choice != 1)
 	{
 		cout << "Number 1: ";
-		num_output(number1, 0, 0, 1);
+		num_output_NZ(number1, 0, 0, 1);
 		cout << "Number 2: ";
-		num_output(number2, 0, 0, 1);
+		num_output_NZ(number2, 0, 0, 1);
 		if (choice != menusize_N) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
-		int* result = NULL;
 		switch (choice)
 		{
 		case 1:
 		{
-			if (number1 == NULL && number2 == NULL)
+			if (number1 == NULL || number2 == NULL)
 			{
-				number1 = input_N(1, 0);
-				number2 = input_N(2, 0);
+				input_arrow_position(1);
 				menu_N(choice, 0);
 				cout << "Number 1: ";
-				num_output(number1, 0, 0, 1);
+				num_output_NZ(number1, 0, 0, 1);
 				cout << "Number 2: ";
-				num_output(number2, 0, 0, 1);
+				num_output_NZ(number2, 0, 0, 1);
 			}
 			break;
 		}
 		case 2:
 		{
-			result = ADD_NN_N(number1, number2);
-			num_output(result, 0, 0, 1);
+			result_NZ = ADD_NN_N(number1, number2);
+			num_output_NZ(result_NZ, 0, 0, 1);
 			break;
 		}
 		case 3:
 		{
-			result = SUB_NN_N(number1, number2);
-			if (COM_NN_D(number1, number2) != 1) num_output(result, 0, 0, 1);
-			else cout << "Error! Negative result.";
+			result_NZ = SUB_NN_N(number1, number2);
+			if (COM_NN_D(number1, number2) != 1) num_output_NZ(result_NZ, 0, 0, 1);
+			else
+			{
+				cout << "Error! Negative result." << endl;
+				delete[] result_NZ;
+				result_NZ = NULL;
+			}
 			break;
 		}
 		case 4:
 		{
-			result = MUL_NN_N(number1, number2);
-			num_output(result, 0, 0, 1);
+			result_NZ = MUL_NN_N(number1, number2);
+			num_output_NZ(result_NZ, 0, 0, 1);
 			break;
 		}
 		case 5:
 		{
-			result = DIV_NN_N(number1, number2);
-			if (result != NULL) num_output(result, 0, 0, 1);
-			else cout << "Error! Division by zero.";
+			result_NZ = DIV_NN_N(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 0, 0, 1);
+			else cout << "Error! Division by zero." << endl;
 			break;
 		}
 		case 6:
 		{
-			result = MOD_NN_N(number1, number2);
-			if (result != NULL) num_output(result, 0, 0, 1);
-			else cout << "Error! Division by zero.";
+			result_NZ = MOD_NN_N(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 0, 0, 1);
+			else cout << "Error! Division by zero." << endl;
 			break;
 		}
 		case 7:
 		{
-			result = GCF_NN_N(number1, number2);
-			if (result != NULL) num_output(result, 0, 0, 1);
-			else cout << "Error! GCD(0,0).";
+			result_NZ = GCF_NN_N(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 0, 0, 1);
+			else cout << "Error! GCD(0,0)." << endl;
 			break;
 		}
 		case 8:
 		{
-			result = LCM_NN_N(number1, number2);
-			if (result != NULL) num_output(result, 0, 0, 1);
-			else cout << "Error! Supposed division by zero.";
+			result_NZ = LCM_NN_N(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 0, 0, 1);
+			else cout << "Error! Supposed division by zero." << endl;
 			break;
 		}
 		}
-		delete[] result;
-		result = NULL;
+		if (choice != 1 && choice != menusize_N) cout << "Press enter to save result to file." << endl;
 	}
 }
 void menu_Z(int choice, bool action_flag)
@@ -2127,65 +2574,62 @@ void menu_Z(int choice, bool action_flag)
 	if (choice != 1)
 	{
 		cout << "Number 1: ";
-		num_output(number1, 1, 0, 1);
+		num_output_NZ(number1, 1, 0, 1);
 		cout << "Number 2: ";
-		num_output(number2, 1, 0, 1);
+		num_output_NZ(number2, 1, 0, 1);
 		if (choice != menusize_Z) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
-		int* result = NULL;
 		switch (choice)
 		{
 		case 1:
 		{
-			if (number1 == NULL && number2 == NULL)
+			if (number1 == NULL || number2 == NULL)
 			{
-				number1 = input_Z(1);
-				number2 = input_Z(2);
+				input_arrow_position(2);
 				menu_Z(choice, 0);
 				cout << "Number 1: ";
-				num_output(number1, 1, 0, 1);
+				num_output_NZ(number1, 1, 0, 1);
 				cout << "Number 2: ";
-				num_output(number2, 1, 0, 1);
+				num_output_NZ(number2, 1, 0, 1);
 			}
 			break;
 		}
 		case 2:
 		{
-			result = ADD_ZZ_Z(number1, number2);
-			if (result != NULL) num_output(result, 1, 0, 1);
+			result_NZ = ADD_ZZ_Z(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 1, 0, 1);
 			break;
 		}
 		case 3:
 		{
-			result = SUB_ZZ_Z(number1, number2);
-			if (result != NULL) num_output(result, 1, 0, 1);
+			result_NZ = SUB_ZZ_Z(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 1, 0, 1);
 			break;
 		}
 		case 4:
 		{
-			result = MUL_ZZ_Z(number1, number2);
-			if (result != NULL) num_output(result, 1, 0, 1);
+			result_NZ = MUL_ZZ_Z(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 1, 0, 1);
 			break;
 		}
 		case 5:
 		{
-			result = DIV_ZZ_Z(number1, number2);
-			if (result != NULL) num_output(result, 1, 0, 1);
-			else cout << "Error! Division by zero or second number is negative.";
+			result_NZ = DIV_ZZ_Z(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 1, 0, 1);
+			else cout << "Error! Division by zero or second number is negative." << endl;
 			break;
 		}
 		case 6:
 		{
-			result = MOD_ZZ_Z(number1, number2);
-			if (result != NULL) num_output(result, 1, 0, 1);
-			else cout << "Error! Division by zero or second number is negative.";
+			result_NZ = MOD_ZZ_Z(number1, number2);
+			if (result_NZ != NULL) num_output_NZ(result_NZ, 1, 0, 1);
+			else cout << "Error! Division by zero or second number is negative." << endl;
 			break;
 		}
 		}
-		delete[] result;
-		result = NULL;
+		if (choice != 1 && choice != menusize_Z) cout << "Press enter to save result to file." << endl;
 	}
 }
 void menu_Q(int choice, bool action_flag)
@@ -2210,67 +2654,65 @@ void menu_Q(int choice, bool action_flag)
 	{
 		cout << "Fraction 1: ";
 		if (INT_Q_B(fraction1) == 0) num_output_Q(fraction1, 1);
-		else num_output(fraction1->numerator, 1, 0, 1);
+		else num_output_NZ(fraction1->numerator, 1, 0, 1);
 		cout << "Fraction 2: ";
 		if (INT_Q_B(fraction2) == 0) num_output_Q(fraction2, 1);
-		else num_output(fraction2->numerator, 1, 0, 1);
+		else num_output_NZ(fraction2->numerator, 1, 0, 1);
 		if (choice != menusize_Q) cout << "Result: ";
 	}
 	if (action_flag == true)
 	{
-		FR* result = NULL;
 		switch (choice)
 		{
 		case 1:
 		{
-			if (fraction1 == NULL && fraction2 == NULL)
+			if (fraction1 == NULL || fraction2 == NULL)
 			{
-				fraction1 = input_Q(1, 0, 0);
-				fraction2 = input_Q(2, 0, 0);
+				input_arrow_position(3);
 				menu_Q(choice, 0);
 				cout << "Fraction 1: ";
 				if (INT_Q_B(fraction1) == 0) num_output_Q(fraction1, 1);
-				else num_output(fraction1->numerator, 1, 0, 1);
+				else num_output_NZ(fraction1->numerator, 1, 0, 1);
 				cout << "Fraction 2: ";
 				if (INT_Q_B(fraction2) == 0) num_output_Q(fraction2, 1);
-				else num_output(fraction2->numerator, 1, 0, 1);
+				else num_output_NZ(fraction2->numerator, 1, 0, 1);
 			}
 			break;
 		}
 		case 2:
 		{
-			result = ADD_QQ_Q(fraction1, fraction2);
-			if (INT_Q_B(result) == 0) num_output_Q(result, 1);
-			else num_output(result->numerator, 1, 0, 1);
+			result_Q = ADD_QQ_Q(fraction1, fraction2);
+			if (INT_Q_B(result_Q) == 0) num_output_Q(result_Q, 1);
+			else num_output_NZ(result_Q->numerator, 1, 0, 1);
 			break;
 		}
 		case 3:
 		{
-			result = SUB_QQ_Q(fraction1, fraction2);
-			if (INT_Q_B(result) == 0) num_output_Q(result, 1);
-			else num_output(result->numerator, 1, 0, 1);
+			result_Q = SUB_QQ_Q(fraction1, fraction2);
+			if (INT_Q_B(result_Q) == 0) num_output_Q(result_Q, 1);
+			else num_output_NZ(result_Q->numerator, 1, 0, 1);
 			break;
 		}
 		case 4:
 		{
-			result = MUL_QQ_Q(fraction1, fraction2);
-			if (INT_Q_B(result) == 0) num_output_Q(result, 1);
-			else num_output(result->numerator, 1, 0, 1);
+			result_Q = MUL_QQ_Q(fraction1, fraction2);
+			if (INT_Q_B(result_Q) == 0) num_output_Q(result_Q, 1);
+			else num_output_NZ(result_Q->numerator, 1, 0, 1);
 			break;
 		}
 		case 5:
 		{
-			result = DIV_QQ_Q(fraction1, fraction2);
-			if (result == NULL) cout << "Error! Division by zero";
+			result_Q = DIV_QQ_Q(fraction1, fraction2);
+			if (result_Q == NULL) cout << "Error! Division by zero";
 			else
 			{
-				if (INT_Q_B(result) == 0) num_output_Q(result, 1);
-				else num_output(result->numerator, 1, 0, 1);
+				if (INT_Q_B(result_Q) == 0) num_output_Q(result_Q, 1);
+				else num_output_NZ(result_Q->numerator, 1, 0, 1);
 			}
 			break;
 		}
 		}
-		if (result != NULL) delete_Q(result);
+		if (choice != 1 && choice != menusize_Q) cout << "Press enter to save result to file." << endl;
 	}
 }
 void menu_P(int choice, bool action_flag)
@@ -2301,97 +2743,202 @@ void menu_P(int choice, bool action_flag)
 	}
 	if (action_flag == true)
 	{
-		FR* result = NULL;
 		switch (choice)
 		{
 		case 1:
 		{
-			if (polynom1 == NULL && polynom2 == NULL)
+			if (polynom1 == NULL || polynom2 == NULL)
 			{
-				polynom1 = input_P(1);
-				polynom2 = input_P(2);
+				input_arrow_position(4);
 				menu_P(choice, 0);
 				cout << "Polynom 1: ";
 				num_output_P(polynom1, 1);
 				cout << "Polynom 2: ";
-				num_output_P(polynom2, 0);
+				num_output_P(polynom2, 1);
 			}
 			break;
 		}
 		case 2:
 		{
-			result = ADD_PP_P(polynom1, polynom2);
-			num_output_P(result, 1);
+			result_P1 = ADD_PP_P(polynom1, polynom2);
+			num_output_P(result_P1, 1);
 			break;
 		}
 		case 3:
 		{
-			result = SUB_PP_P(polynom1, polynom2);
-			num_output_P(result, 1);
+			result_P1 = SUB_PP_P(polynom1, polynom2);
+			num_output_P(result_P1, 1);
 			break;
 		}
 		case 4:
 		{
-			result = MUL_PP_P(polynom1, polynom2);
-			num_output_P(result, 1);
+			result_P1 = MUL_PP_P(polynom1, polynom2);
+			num_output_P(result_P1, 1);
 			break;
 		}
 		case 5:
 		{
-			result = DIV_PP_P(polynom1, polynom2);
-			num_output_P(result, 1);
+			result_P1 = DIV_PP_P(polynom1, polynom2);
+			num_output_P(result_P1, 1);
 			break;
 		}
 		case 6:
 		{
-			result = MOD_PP_P(polynom1, polynom2);
-			num_output_P(result, 1);
+			result_P1 = MOD_PP_P(polynom1, polynom2);
+			num_output_P(result_P1, 1);
 			break;
 		}
 		case 7:
 		{
-			result = GCF_PP_P(polynom1, polynom2);
-			num_output_P(result, 1);
+			result_P1 = GCF_PP_P(polynom1, polynom2);
+			num_output_P(result_P1, 1);
 			break;
 		}
 		case 8:
 		{
 			cout << "Result 1: ";
-			result = DER_P_P(polynom1);
-			num_output_P(result, 1);
-			delete_P(result);
+			result_P1 = DER_P_P(polynom1);
+			num_output_P(result_P1, 1);
 			cout << "Result 2: ";
-			result = DER_P_P(polynom2);
-			num_output_P(result, 1);
+			result_P2 = DER_P_P(polynom2);
+			num_output_P(result_P2, 1);
 			break;
 		}
 		case 9:
 		{
 			cout << "Result 1: ";
-			result = NMR_P_P(polynom1);
-			num_output_P(result, 1);
-			delete_P(result);
+			result_P1 = NMR_P_P(polynom1);
+			num_output_P(result_P1, 1);
 			cout << "Result 2: ";
-			result = NMR_P_P(polynom2);
-			num_output_P(result, 1);
+			result_P2 = NMR_P_P(polynom2);
+			num_output_P(result_P2, 1);
 			break;
 		}
 		}
-		delete_P(result);
+		if (choice != 1 && choice != menusize_P) cout << "Press enter to save result to file." << endl;
 	}
 }
 
 //выбор действия в меню
-void arrow_position(int menu_size, int module_)
+void input_arrow_position(int type)
+{
+	int choice = 1;
+	int input_menusize = sizeof(input_menu) / sizeof(input_menu[0]);
+	while (true)
+	{
+		menu_input(choice, type);
+		int arrow = _getch();
+		if (arrow == 224) arrow = _getch();
+		switch (arrow)
+		{
+		case _up:
+		{
+			choice--;
+			if (choice == 0) choice = input_menusize;
+			break;
+		}
+		case _down:
+		{
+			choice++;
+			if (choice == input_menusize + 1) choice = 1;
+			break;
+		}
+		case _enter:
+		{
+			switch (choice)
+			{
+			case 1: 
+			{
+				switch (type)
+				{
+				case 1: {delete[] number1; number1 = input_N(1, 0); break;}
+				case 2: {delete[] number1; number1 = input_Z(1); break;}
+				case 3: {delete_Q(fraction1); fraction1 = input_Q(1, 0, 0); break;}
+				case 4: {delete_P(polynom1); polynom1 = input_P(1); break;}
+				}
+				break;
+			}
+			case 2:
+			{
+				switch (type)
+				{
+				case 1: {delete[] number2; number2 = input_N(2, 0); break;}
+				case 2: {delete[] number2; number2 = input_Z(2); break;}
+				case 3: {delete_Q(fraction2); fraction2 = input_Q(2, 0, 0); break;}
+				case 4: {delete_P(polynom2); polynom2 = input_P(2); break;}
+				}
+				break;
+			}
+			case 3:
+			{
+				switch (type)
+				{
+				case 1: {delete[] number1; number1 = read_from_file_NZ(0); break;}
+				case 2: {delete[] number1; number1 = read_from_file_NZ(1); break;}
+				case 3: {delete_Q(fraction1); fraction1 = read_from_file_Q(); break;}
+				case 4: {delete_P(polynom1); polynom1 = read_from_file_P(); break;}
+				}
+				break;
+			}
+			case 4:
+			{
+				switch (type)
+				{
+				case 1: {delete[] number2; number2 = read_from_file_NZ(0); break;}
+				case 2: {delete[] number2; number2 = read_from_file_NZ(1); break;}
+				case 3: {delete_Q(fraction2); fraction2 = read_from_file_Q(); break;}
+				case 4: {delete_P(polynom2); polynom2 = read_from_file_P(); break;}
+				}
+				break;
+			}
+			case 5:
+			{
+				switch (type)
+				{
+				case 1: {if (number1 != NULL) write_to_file_NZ(number1, 0); else { cout << "Error! Number 1 doesn't exist."; Sleep(500); } break;}
+				case 2: {if (number1 != NULL) write_to_file_NZ(number1, 1); else { cout << "Error! Number 1 doesn't exist."; Sleep(500); } break;}
+				case 3: {if (fraction1 != NULL) write_to_file_Q(fraction1); else { cout << "Error! Fraction 1 doesn't exist."; Sleep(500); } break;}
+				case 4: {if (polynom1 != NULL) write_to_file_P(polynom1); else { cout << "Error! Polynom 1 doesn't exist."; Sleep(500); } break;}
+				}
+				break;
+			}
+			case 6:
+			{
+				switch (type)
+				{
+				case 1: {if (number2 != NULL) write_to_file_NZ(number2, 0); else { cout << "Error! Number 2 doesn't exist."; Sleep(500); } break;}
+				case 2: {if (number2 != NULL) write_to_file_NZ(number2, 1); else { cout << "Error! Number 2 doesn't exist."; Sleep(500); } break;}
+				case 3: {if (fraction2 != NULL) write_to_file_Q(fraction2); else { cout << "Error! Fraction 2 doesn't exist."; Sleep(500); } break;}
+				case 4: {if (polynom2 != NULL) write_to_file_P(polynom2); else { cout << "Error! Polynom 2 doesn't exist."; Sleep(500); } break;}
+				}
+				break;
+			}
+			case 7:
+			{
+				switch (type)
+				{
+				case 1: {if (number1 != NULL && number2 != NULL) return;}
+				case 2: {if (number1 != NULL && number2 != NULL) return;}
+				case 3: {if (fraction1 != NULL && fraction2 != NULL) return;}
+				case 4: {if (polynom1 != NULL && polynom2 != NULL) return;}
+				}
+				break;
+			}
+			}
+			break;
+		}
+		}
+	}
+}
+void arrow_position(int menu_size, int type)
 {
 	bool input_flag = true;
-	int arrow;
 	int choice = 1;
 	while (true)
 	{
 		if (choice != 1)
 		{
-			switch (module_)
+			switch (type)
 			{
 			case 1: {menu_N(choice, 1); break;}
 			case 2: {menu_Z(choice, 1); break;}
@@ -2403,7 +2950,7 @@ void arrow_position(int menu_size, int module_)
 		{
 			if (input_flag == true)
 			{
-				switch (module_)
+				switch (type)
 				{
 				case 1: {menu_N(choice, 1); break;}
 				case 2: {menu_Z(choice, 1); break;}
@@ -2413,15 +2960,15 @@ void arrow_position(int menu_size, int module_)
 			}
 			else
 			{
-				switch (module_)
+				switch (type)
 				{
 				case 1:
 				{
 					menu_N(choice, 0);
 					cout << "Number 1: ";
-					num_output(number1, 0, 0, 1);
+					num_output_NZ(number1, 0, 0, 1);
 					cout << "Number 2: ";
-					num_output(number2, 0, 0, 1);
+					num_output_NZ(number2, 0, 0, 1);
 					cout << "Press enter to input new numbers";
 					break;
 				}
@@ -2429,9 +2976,9 @@ void arrow_position(int menu_size, int module_)
 				{
 					menu_Z(choice, 0);
 					cout << "Number 1: ";
-					num_output(number1, 1, 0, 1);
+					num_output_NZ(number1, 1, 0, 1);
 					cout << "Number 2: ";
-					num_output(number2, 1, 0, 1);
+					num_output_NZ(number2, 1, 0, 1);
 					cout << "Press enter to input new numbers";
 					break;
 				}
@@ -2441,10 +2988,10 @@ void arrow_position(int menu_size, int module_)
 					menu_Q(choice, 0);
 					cout << "Fraction 1: ";
 					if (INT_Q_B(fraction1) == 0) num_output_Q(fraction1, 1);
-					else num_output(fraction1->numerator, 1, 0, 1);
+					else num_output_NZ(fraction1->numerator, 1, 0, 1);
 					cout << "Fraction 2: ";
 					if (INT_Q_B(fraction2) == 0) num_output_Q(fraction2, 1);
-					else num_output(fraction2->numerator, 1, 0, 1);
+					else num_output_NZ(fraction2->numerator, 1, 0, 1);
 					cout << "Press enter to input new fractions";
 					break;
 				}
@@ -2461,7 +3008,7 @@ void arrow_position(int menu_size, int module_)
 				}
 			}
 		}
-		arrow = _getch();
+		int arrow = _getch();
 		if (arrow == 224) arrow = _getch();
 		switch (arrow)
 		{
@@ -2469,88 +3016,107 @@ void arrow_position(int menu_size, int module_)
 		{
 			choice--;
 			if (choice == 0) choice = menu_size;
+			switch (type)
+			{
+			case 1: {if (result_NZ != NULL) { delete[] result_NZ; result_NZ = NULL; } break; }
+			case 2: {if (result_NZ != NULL) { delete[] result_NZ; result_NZ = NULL; } break;}
+			case 3: {if (result_Q != NULL) { delete_Q(result_Q); result_Q = NULL; } break;}
+			case 4:
+			{
+				if (result_P1 != NULL) { delete_P(result_P1); result_P1 = NULL; }
+				if (result_P2 != NULL) { delete_P(result_P2); result_P2 = NULL; }
+				break;
+			}
+			}
 			break;
 		}
 		case _down:
 		{
 			choice++;
 			if (choice == menu_size + 1) choice = 1;
+			switch (type)
+			{
+			case 1: {if (result_NZ != NULL) { delete[] result_NZ; result_NZ = NULL; } break; }
+			case 2: {if (result_NZ != NULL) { delete[] result_NZ; result_NZ = NULL; } break;}
+			case 3: {if (result_Q != NULL) { delete_Q(result_Q); result_Q = NULL; } break;}
+			case 4:
+			{
+				if (result_P1 != NULL) { delete_P(result_P1); result_P1 = NULL; }
+				if (result_P2 != NULL) { delete_P(result_P2); result_P2 = NULL; }
+				break;
+			}
+			}
 			break;
 		}
 		case _enter:
 		{
-			if (choice == 1 || choice == menu_size)
+			if (choice == menu_size || choice == 1)
 			{
-				switch (module_)
+				if (choice == menu_size)
 				{
-				case 1:
-				{
-					delete[] number1;
-					number1 = NULL;
-					delete[] number2;
-					number2 = NULL;
-					if (choice == menu_size) return;
-					menu_N(choice, 1);
-					break;
+					switch (type)
+					{
+					case 1: {delete[] number1; delete[] number2; number1 = NULL; number2 = NULL; return;}
+					case 2: {delete[] number1; delete[] number2; number1 = NULL; number2 = NULL; return;}
+					case 3: {delete_Q(fraction1); delete_Q(fraction2); fraction1 = NULL; fraction2 = NULL; return;}
+					case 4: {delete_P(polynom1); delete_P(polynom2); polynom1 = NULL; polynom2 = NULL; return;}
+					}
 				}
-				case 2:
+				if (choice == 1) input_arrow_position(type);
+			}
+			else
+			{
+				switch (type)
 				{
-					delete[] number1;
-					number1 = NULL;
-					delete[] number2;
-					number2 = NULL;
-					if (choice == menu_size) return;
-					menu_Z(choice, 1);
-					break;
-				}
-				case 3:
+				case 1: {if (result_NZ != NULL) write_to_file_NZ(result_NZ, 0); else { cout << "Error! Result doesn't exist."; Sleep(500); } break;}
+				case 2: {if (result_NZ != NULL) write_to_file_NZ(result_NZ, 1); else { cout << "Error! Result doesn't exist."; Sleep(500); } break;}
+				case 3: {if (result_Q != NULL) write_to_file_Q(result_Q); else { cout << "Error! Result doesn't exist."; Sleep(500); } break;}
+				case 4: 
 				{
-					delete[] fraction1;
-					fraction1 = NULL;
-					delete[] fraction2;
-					fraction2 = NULL;
-					if (choice == menu_size) return;
-					menu_Q(choice, 1);
-					break;
-				}
-				case 4:
-				{
-					delete_P(polynom1);
-					polynom1 = NULL;
-					delete_P(polynom2);
-					polynom2 = NULL;
-					if (choice == menu_size) return;
-					menu_P(choice, 1);
+					if (choice != 1 && choice != 8 && choice != 9 && choice != menusize_P) write_to_file_P(result_P1);
+					if (choice == 8 || choice == 9)
+					{
+						int res = 0;
+						cout << "Choose result (1 or 2, any number to skip): ";
+						cin >> res;
+						if (res == 1) write_to_file_P(result_P1);
+						if (res == 2) write_to_file_P(result_P2);
+					}
 					break;
 				}
 				}
 			}
+			break;
 		}
 		}
 		input_flag = false;
 	}
 }
-void module_arrow_position(int menu_size)
+void module_arrow_position()
 {
-	int arrow;
 	int choice = 1;
+	int module_menusize = sizeof(module_menu) / sizeof(module_menu[0]);
+	int menusize_N = sizeof(N_menu) / sizeof(N_menu[0]);
+	int menusize_Z = sizeof(Z_menu) / sizeof(Z_menu[0]);
+	int menusize_Q = sizeof(Q_menu) / sizeof(Q_menu[0]);
+	int menusize_P = sizeof(P_menu) / sizeof(P_menu[0]);
 	while (true)
 	{
-		module_menu(choice);
-		arrow = _getch();
+		menu_module(choice);
+		int arrow = _getch();
 		if (arrow == 224) arrow = _getch();
 		switch (arrow)
 		{
 		case _up:
 		{
 			choice--;
-			if (choice == 0) choice = menu_size;
+			if (choice == 0) choice = module_menusize;
 			break;
 		}
 		case _down:
 		{
 			choice++;
-			if (choice == menu_size + 1) choice = 1;
+			if (choice == module_menusize + 1) choice = 1;
 			break;
 		}
 		case _enter:
@@ -2562,7 +3128,7 @@ void module_arrow_position(int menu_size)
 			case 3: {arrow_position(menusize_Z, 2); break;}
 			case 4: {arrow_position(menusize_Q, 3); break;}
 			case 5: {arrow_position(menusize_P, 4); break;}
-			case 6: {return;}
+			case 6: return;
 			}
 
 		}
@@ -2572,6 +3138,6 @@ void module_arrow_position(int menu_size)
 
 int main()
 {
-	module_arrow_position(module_menusize);
+	module_arrow_position();
 }
 
