@@ -1,44 +1,47 @@
 #include <iostream>
+#include <vector>
+#include <cstdio>
+#include <algorithm>
 
-int gcd(int a, int b)
+int _gcd(int a, int b)
 {
-	int nod = 1;
-	int tmp;
-	if (a == 0) return b;
-	if (b == 0) return a;
-	if (a == b)  return a;
-	if (a == 1 || b == 1) return 1;
-	while (a != 0 && b != 0)
-	{
-		if (a % 2 == 0 && b % 2 == 0)
-		{
-			nod *= 2;
-			a /= 2;
-			b /= 2;
-			continue;
-		}
-		if (a % 2 == 0 && b % 2 != 0)
-		{
-			a /= 2;
-			continue;
-		}
-		if (a % 2 != 0 && b % 2 == 0)
-		{
-			b /= 2;
-			continue;
-		}
-		if (a > b)
-		{
-			tmp = a;
-			a = b;
-			b = tmp;
-		}
-		tmp = a;
-		a = (b - a) / 2;
-		b = tmp;
-	}
-	if (a == 0) return nod * b;
-	else return nod * a;
+    int nod = 1;
+    int tmp;
+    if (a == 0) return b;
+    if (b == 0) return a;
+    if (a == b)  return a;
+    if (a == 1 || b == 1) return 1;
+    while (a != 0 && b != 0)
+    {
+        if (a % 2 == 0 && b % 2 == 0)
+        {
+            nod *= 2;
+            a /= 2;
+            b /= 2;
+            continue;
+        }
+        if (a % 2 == 0 && b % 2 != 0)
+        {
+            a /= 2;
+            continue;
+        }
+        if (a % 2 != 0 && b % 2 == 0)
+        {
+            b /= 2;
+            continue;
+        }
+        if (a > b)
+        {
+            tmp = a;
+            a = b;
+            b = tmp;
+        }
+        tmp = a;
+        a = (b - a) / 2;
+        b = tmp;
+    }
+    if (a == 0) return nod * b;
+    else return nod * a;
 }
 
 void _1325A()
@@ -77,7 +80,7 @@ void _798C()
 	{
 		int temp;
 		std::cin >> temp;
-		num = gcd(num, temp);
+		num = _gcd(num, temp);
 		if (temp & 1) counter++;
 		else
 		{
@@ -315,11 +318,201 @@ void _199A()
 	}
 }
 
+#define INF 0x3fffffffffffffff
+
+const long long  mod = 1e9 + 7;
+const int maxn = 1000005;
+long long  n, a, b;
+long long  cost[maxn], val[maxn], dp[maxn][3];
+std::vector <long long> GCD;
+
+long long calculation(long long x)
+{
+	int i;
+	for (i = 1; i <= n; i++)
+	{
+		cost[i] = 1e12 + 7;
+		if (val[i] % x == 0)
+			cost[i] = 0;
+		else if ((val[i] + 1) % x == 0 || (val[i] - 1) % x == 0)
+			cost[i] = b;
+	}
+	for (i = 1; i <= n; i++)
+	{
+		dp[i][0] = dp[i - 1][0] + cost[i];
+		dp[i][1] = std::min(dp[i - 1][0], dp[i - 1][1]) + a;
+		dp[i][2] = std::min(dp[i - 1][1], dp[i - 1][2]) + cost[i];
+	}
+	return std::min(std::min(dp[n][2], dp[n][1]), dp[n][0]);
+}
+
+void pri(long long x)
+{
+	int i;
+	for (i = 2; i * i <= x; i++)
+	{
+		if (x % i == 0)
+			GCD.push_back(i);
+		while (x % i == 0)
+			x = x / i;
+	}
+	if (x != 1)
+		GCD.push_back(x);
+}
+
+void solve()
+{
+	int i;
+	std::cin >> n >> a >> b;
+	for (i = 1; i <= n; i++)
+		std::cin >> val[i];
+	pri(val[1]);
+	pri(val[1] + 1);
+	pri(val[1] - 1);
+	pri(val[n]);
+	pri(val[n] + 1);
+	pri(val[n] - 1);
+	std::sort(GCD.begin(), GCD.end());
+	GCD.erase(std::unique(GCD.begin(), GCD.end()), GCD.end());
+	long long  ans = INF, sz = GCD.size();
+	for (i = 0; i < sz; i++)
+		ans = std::min(ans, calculation(GCD[i]));
+	std::cout << ans << std::endl;
+}
+
+void _623B()
+{
+	solve();
+}
+
+void _1350A()
+{
+	int t, n, k;
+	std::cin >> t;
+	int* arr = new int[t];
+	for (int i = 0; i < t; i++)
+	{
+		std::cin >> n >> k;
+		if (n % 2 == 0) arr[i] = n + 2 * k;
+		else
+		{
+			bool flag = false;
+			for (int i = 3; i * i <= n; i += 2)
+			{
+				if (n % i == 0)
+				{
+					n += i;
+					flag = true;
+					break;
+				}
+			}
+			if (flag == false) n *= 2;
+			n = n + 2 * (k - 1);
+			arr[i] = n;
+		}
+	}
+	std::cout << std::endl;
+	for (int i = 0; i < t; i++) std::cout << arr[i] << std::endl;
+}
+
+void _1238A()
+{
+	int t;
+	long long x, y;
+	std::cin >> t;
+	bool* arr = new bool[t];
+	for (int i = 0; i < t; i++)
+	{
+		std::cin >> x >> y;
+		long long razn = x - y;
+		if (razn == 1) arr[i] = 0;
+		else arr[i] = 1;
+	}
+	for (int i = 0; i < t; i++)
+	{
+		if (arr[i] == 1) std::cout << "YES" << std::endl; else std::cout << "NO" << std::endl;
+	}
+}
+
+void _1285C()
+{
+	long long X, max(1), gcd;
+	std::cin >> X;
+	for (long long i = 1; i * i < X; i++)
+	{
+		if (X % i == 0)
+		{
+			gcd = _gcd(i, X / i);
+			if (gcd == 1) max = i;
+		}
+	}
+	std::cout << max << " " << (X / max);
+}
+
+void _1108B()
+{
+	int n, first(1), second(1), gcd(1);
+	int del_first[100];
+	for (int i = 0; i < 100; i++) del_first[i] = -1;
+	std::cin >> n;
+	int* arr = new int[n];
+	for (int i = 0; i < n; i++) std::cin >> arr[i];
+	for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) if (arr[i] == arr[j] && i != j && arr[i] > gcd) gcd = arr[i];
+	for (int i = 0; i < n; i++) if (arr[i] > first) first = arr[i];
+	int j = 0;
+	for (int i = 0; i < n; i++)
+	{
+		bool flag = false;
+		if (first % arr[i] == 0)
+		{
+			int k = 0;
+			while (del_first[k] != -1)
+			{
+				if (arr[i] == del_first[k])
+				{
+					flag = true;
+					break;
+				}
+				k++;
+			}
+			if (flag == true) continue;
+			else del_first[j] = arr[i];
+			j++;
+		}
+	}
+	del_first[j] = first;
+	for (int i = 0; i < n; i++)
+	{
+		if (first % arr[i] == 0)
+		{
+			int j = 0;
+			while (del_first[j] != -1)
+			{
+				if (arr[i] == del_first[j])
+				{
+					del_first[j] = -2;
+					arr[i] = -1;
+					break;
+				}
+				j++;
+			}
+		}
+	}
+	if (gcd == first) second = first;
+	else for (int i = 0; i < n; i++) if (arr[i] > second) second = arr[i];
+	std::cout << first << " " << second;
+}
+
 int main()
 {
-	//_1325A(); //нужно раскоментарить нужную функцию для решения конкретной задачи
+	//_1325A();
 	//_664A();
 	//_798C();
 	//_1228C();
 	//_199A();
+	//_623B();
+	//_1350A();
+	//_1108B();
+	//_1285C();
+	//_1238A();
 }
