@@ -318,71 +318,15 @@ void _199A()
 	}
 }
 
-#define INF 0x3fffffffffffffff
-
-const long long  mod = 1e9 + 7;
-const int maxn = 1000005;
-long long  n, a, b;
-long long  cost[maxn], val[maxn], dp[maxn][3];
-std::vector <long long> GCD;
-
-long long calculation(long long x)
+void _456B()
 {
-	int i;
-	for (i = 1; i <= n; i++)
-	{
-		cost[i] = 1e12 + 7;
-		if (val[i] % x == 0)
-			cost[i] = 0;
-		else if ((val[i] + 1) % x == 0 || (val[i] - 1) % x == 0)
-			cost[i] = b;
-	}
-	for (i = 1; i <= n; i++)
-	{
-		dp[i][0] = dp[i - 1][0] + cost[i];
-		dp[i][1] = std::min(dp[i - 1][0], dp[i - 1][1]) + a;
-		dp[i][2] = std::min(dp[i - 1][1], dp[i - 1][2]) + cost[i];
-	}
-	return std::min(std::min(dp[n][2], dp[n][1]), dp[n][0]);
-}
-
-void pri(long long x)
-{
-	int i;
-	for (i = 2; i * i <= x; i++)
-	{
-		if (x % i == 0)
-			GCD.push_back(i);
-		while (x % i == 0)
-			x = x / i;
-	}
-	if (x != 1)
-		GCD.push_back(x);
-}
-
-void solve()
-{
-	int i;
-	std::cin >> n >> a >> b;
-	for (i = 1; i <= n; i++)
-		std::cin >> val[i];
-	pri(val[1]);
-	pri(val[1] + 1);
-	pri(val[1] - 1);
-	pri(val[n]);
-	pri(val[n] + 1);
-	pri(val[n] - 1);
-	std::sort(GCD.begin(), GCD.end());
-	GCD.erase(std::unique(GCD.begin(), GCD.end()), GCD.end());
-	long long  ans = INF, sz = GCD.size();
-	for (i = 0; i < sz; i++)
-		ans = std::min(ans, calculation(GCD[i]));
-	std::cout << ans << std::endl;
-}
-
-void _623B()
-{
-	solve();
+	int true_st;
+	std::string number;
+	std::cin >> number;
+	if (number.size() > 1) true_st = ((number[number.size() - 2] - '0') * 10 + number[number.size() - 1] - '0') % 4;
+	else true_st = (number[number.size() - 1] - '0') % 4;
+	if (true_st == 0) std::cout << 4;
+	if (true_st == 1 || true_st == 2 || true_st == 3) std::cout << 0;
 }
 
 void _1350A()
@@ -510,7 +454,7 @@ int main()
 	//_1238A();
 	//_1325A();
 	//_1350A();
-	//_623B();
+	//_456B();
 	//_1108B();
 	//_798C();
 	//_1228C();
