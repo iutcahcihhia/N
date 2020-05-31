@@ -1,0 +1,341 @@
+#include <iostream>
+#include <cmath>
+#include <string>
+
+using namespace std;
+
+
+int _gcd(int a, int b)
+{
+	while (true)
+	{
+		if (a == 0) return b;
+		if (b == 0) return a;
+		if (a >= b) a = a % b;
+		else b = b % a;
+	}
+}
+
+int euler_function(int number) {
+	int res = number;
+	for (int i = 2; i * i <= number; ++i)
+	{
+		if (number % i == 0)
+		{
+			while (number % i == 0) number /= i;
+			res -= res / i;
+		}
+	}
+	if (number > 1) res -= res / number;
+	return res;
+}
+
+int __gcd(int a, int b)
+{
+	return b == 0 ? a : __gcd(b, a % b);
+}
+
+void _A1()
+{
+	long t, x;
+	cin >> t;
+	for (int i = 0; i < t; ++i)
+	{
+		cin >> x;
+		cout << 1 << endl << x - 1 << endl;
+	}
+}
+
+void _B1()
+{
+	int a, b, c, d;
+	cin >> a >> b >> c >> d;
+	int gcd = __gcd(a, b);
+	a /= gcd;
+	b /= gcd;
+	gcd = __gcd(c, d);
+	c /= gcd;
+	d /= gcd;
+	int aa = a, bb = b, cc = c, dd = d;
+	int lcm = a * c / __gcd(a, c);
+	gcd = lcm / a;
+	b *= gcd;
+	gcd = lcm / c;
+	d *= gcd;
+	int x, y, xx, yy;
+	x = b - d;
+	y = b;
+	gcd = __gcd(x, y);
+	x /= gcd;
+	y /= gcd;
+	lcm = bb * dd / __gcd(bb, dd);
+	gcd = lcm / bb;
+	aa *= gcd;
+	gcd = lcm / dd;
+	cc *= gcd;
+	xx = aa - cc;
+	yy = aa;
+	gcd = __gcd(xx, yy);
+	xx /= gcd;
+	yy /= gcd;
+	if (xx < 0 || yy < 0) cout << x << "/" << y << endl;
+	else cout << xx << "/" << yy << endl;
+}
+
+void _C1()
+{
+	long long numerator, denominator, z, ost(0), result(0);
+	cin >> numerator >> denominator;
+	do
+	{
+		z = numerator / denominator;
+		ost = numerator % denominator;
+		numerator = ost;
+		long long tmp = denominator;
+		denominator = numerator;
+		numerator = tmp;
+		result += z;
+	} while (ost != 0);
+	cout << result;
+}
+
+void _A3()
+{
+	int t;
+	cin >> t;
+	for (int i = 0; i < t; i++)
+	{
+		int n;
+		cin >> n;
+		if (n != 1)
+		{
+			cout << 2;
+			for (int i = 0; i < n - 1; i++) cout << 3;
+			cout << endl;
+		}
+		else cout << -1 << endl;
+	}
+}
+
+void bubble_sort_B3(long long* _array, int n)
+{
+	while (true)
+	{
+		bool flag = false;
+		for (int i = 0; i < n - 1; i++)
+		{
+			if (_array[i] > _array[i + 1])
+			{
+				long long stack = _array[i];
+				_array[i] = _array[i + 1];
+				_array[i + 1] = stack;
+				flag = true;
+			}
+		}
+		if (flag == false) break;
+	}
+}
+
+void _B3()
+{
+	int t;
+	cin >> t;
+	long long* ans = new long long[t];
+	for (int i = 0; i < t; i++)
+	{
+		int n;
+		long long min_d(1000001), max_d(1);
+		bool flag = true;
+		cin >> n;
+		long long* arr = new long long[n];
+		for (int i = 0; i < n; i++) cin >> arr[i];
+		bubble_sort_B3(arr, n);
+		long long num = arr[0] * arr[n - 1];
+		int count = 0;
+		for (long long k = 2; k * k <= num; k++)
+		{
+			if (num % k == 0) count+=2;
+			if (k * k == num) count--;
+		}
+		long long* arr_d = new long long[count];
+		count = 0;
+		for (long long k = 2; k * k <= num; k++)
+		{
+			if (num % k == 0)
+			{
+				arr_d[count] = k;
+				count++;
+				if (num / k != k)
+				{
+					arr_d[count] = num / k;
+					count++;
+				}
+			}
+		}
+		bubble_sort_B3(arr_d, count);
+		if (count == n) { for (int i = 0; i < n; i++) if (arr_d[i] != arr[i]) flag = false; } else flag = false;
+		if (flag == false) ans[i] = -1;
+		else ans[i] = num;
+	}
+	for (int i = 0; i < t; i++) cout << ans[i] << endl;
+}
+
+void reccurent_d_С3(int number, int* _array, int pos, int k, int full_number, int full_k)
+{	
+	if (k == 1) 
+	{
+		int s = full_number;
+		for (int i = 0; i < full_k - 1; i++) s /= _array[i];
+		_array[pos] = s;
+	}
+	else
+	{
+		for (int i = 2; i * i <= number; i++) if (number % i == 0) { _array[pos] = i; break; }
+		if (_array[pos] == -1) return;
+		else reccurent_d_С3(number / _array[pos], _array, pos + 1, k - 1, full_number, full_k);
+	}
+}
+
+void _C3()
+{
+	int n, k;
+	bool flag = true;
+	cin >> n >> k;
+	int* arr = new int[k];
+	for (int i = 0; i < k; i++) arr[i] = -1;
+	reccurent_d_С3(n, arr, 0, k, n, k);
+	for (int i = 0; i < k; i++) if (arr[i] == -1) flag = false;
+	if (flag == false) cout << -1;
+	else for (int i = 0; i < k; i++) cout << arr[i] << " ";
+}
+
+void _A4()
+{
+	int p;
+	cin >> p;
+	cout << euler_function(p - 1);
+}
+
+void _B4()
+{
+	int true_st;
+	string number;
+	cin >> number;
+	if (number.size() > 1) true_st = ((number[number.size() - 2] - '0') * 10 + number[number.size() - 1] - '0') % 4;
+	else true_st = (number[number.size() - 1] - '0') % 4;
+	if (true_st == 0) cout << 4;
+	if (true_st == 1 || true_st == 2 || true_st == 3) cout << 0;
+}
+
+void _A5()
+{
+	int a, b;
+	cin >> a >> b;
+	double ans = a;
+	for (int i = 0; i <= a - 1; i++)
+	{
+		double temp = (double)i / a;
+		ans -= pow(temp, b);
+	}
+	cout << ans;
+}
+
+int recur_B5(int inv_count)
+{
+	switch (inv_count)
+	{
+	case 0:	return 0;
+	case 1: return 1;
+	default: return 4 + recur_B5(inv_count - 2);
+	}
+}
+
+void _B5()
+{
+	int n;
+	cin >> n;
+	int* arr = new int[n];
+	for (int i = 0; i < n; i++) cin >> arr[i];
+	int inv_count = 0;
+	for (int i = 0; i < n; i++) for (int j = 0; j < i; j++) if (arr[j] > arr[i]) inv_count++;
+	printf("%.6f\n", (double)recur_B5(inv_count));
+}
+
+void _A7()
+{
+	int w, h;
+	long long counter(4), mod(998244353);
+	cin >> w >> h;
+	for (int i = 0; i < w + h - 2; i++)
+	{ 
+		counter *= 2;
+		counter %= mod;
+	}
+	cout << counter;
+}
+
+void _B7()
+{
+	unsigned long long n, m;
+	unsigned long long sum, mod(1000000007);
+	cin >> n >> m;
+	unsigned long long tmp1 = 1;
+	unsigned long long* del = new unsigned long long[2 * m];
+	for (unsigned long long i = 1; i <= 2 * m; i++) del[i - 1] = i;
+	for (unsigned long long i = 0; i < 2 * m; i++)
+	{
+		tmp1 *= (n + i);
+		for (int i = 0; i < 2 * m; i++)
+		{
+			if (tmp1 % del[i] == 0 && del[i] != 2*m + 1)
+			{
+				tmp1 /= del[i];
+				del[i] = 2 * m + 1;
+			}
+		}
+		tmp1 %= mod;
+	}
+	cout << tmp1;
+}
+
+void _A8()
+{
+	int lucky_numbers[] = { 4,7,44,47,74,77,444,447,474,477,744,747,774,777 };
+	bool flag = false;
+	int n;
+	cin >> n;
+	for (int i = 0; i < 14; i++) if (n % lucky_numbers[i] == 0) flag = true;
+	if (flag == true) cout << "YES"; else cout << "NO";
+}
+
+void _B8()
+{
+	long long a, b, k, sum(0), op1, op2, mod(1000000007);
+	cin >> a >> b;
+	for (k = 1; k <= a; k++) 
+	{
+		op1 = (k * b + 1) % mod;
+		op2 = (b * (b - 1) / 2) % mod;
+		sum += op1 * op2 % mod;
+	}
+	sum %= mod;
+	cout << sum;
+}
+
+int main()
+{
+	//_A1();
+	//_B1();
+	//_C1();
+	//_A3();
+	//_B3();
+	//_C3();
+	//_A4();
+	//_B4();
+	//_A5();
+	//_B5();
+	//_A7();
+	//_B7();
+	//_A8();
+	//_B8();
+}
